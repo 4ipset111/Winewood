@@ -1,4 +1,6 @@
 #include "QuarkCore/QuarkCore.hpp"
+#include "resources.h"
+
 using namespace qc;
 
 int main()
@@ -13,7 +15,7 @@ int main()
 
         DrawDebugText(TextFormat("%d", GetFPS()), 0, 0, 24, Color{255, 255, 255, 255});
         DrawDebugText("Winewood", 0, 24, 24, Color{255, 255, 255, 255});
-        
+
 		EndDrawing();
 	}
 

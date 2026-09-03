@@ -15,11 +15,16 @@ endif()
 
 add_executable(winewood
 	src/main.cpp
+	src/resources.cpp
 )
 
 target_link_libraries(winewood PRIVATE
 	QuarkCore::QuarkCore
 	QuarkCore::OpenGL
+)
+
+target_include_directories(winewood PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 if(WIN32)
