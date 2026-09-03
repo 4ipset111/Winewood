@@ -69,7 +69,6 @@ void Player::Update() {
     m_Lean.y = Lerp(m_Lean.y, forward * 0.015f, 10.0f * delta);
 
     UpdateCameraFPS();
-    SetMousePosition(GetScreenWidth() / 2, GetScreenHeight() / 2);
 }
 
 void Player::UpdateBody(float rot, float side, float forward, bool jumpPressed, bool crouchHold)
