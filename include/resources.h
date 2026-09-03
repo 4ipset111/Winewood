@@ -2,6 +2,7 @@
 #define RESOURCES_H
 
 #include "QuarkCore/QuarkCore.hpp"
+#include "scene_loader.h"
 
 #include <string>
 #include <unordered_map>
@@ -43,6 +44,12 @@ private:
     std::unordered_map<std::type_index, std::unique_ptr<IStorage>> storages;
 };
 
-extern ResourceManager Resources;
+extern ResourceManager gs_Resources;
+
+template<>
+void ResourceManager::Load<qscene::Scene>(const std::string& name, const std::string& path);
+
+template<>
+void ResourceManager::Load<qc::Model>(const std::string& name, const std::string& path);
 
 #endif // RESOURCES_H

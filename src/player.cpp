@@ -1,4 +1,5 @@
 #include "player.h"
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -13,6 +14,8 @@ namespace {
     constexpr float CROUCH_HEIGHT = 0.0f;
     constexpr float STAND_HEIGHT = 1.0f;
     constexpr float BOTTOM_HEIGHT = 0.5f;
+    constexpr float PLAYER_RADIUS = 0.15f;
+    constexpr float PLAYER_HEIGHT = 1.8f;
 
     Vec3 RotateAroundAxis(const Vec3& v, const Vec3& axis, float angle)
     {
@@ -22,12 +25,6 @@ namespace {
         return v * c + n.cross(v) * s + n * (n.dot(v) * (1.0f - c));
     }
 
-    float AngleBetween(const Vec3& a, const Vec3& b)
-    {
-        float d = a.normalized().dot(b.normalized());
-        d = Clamp(d, -1.0f, 1.0f);
-        return acosf(d);
-    }
 }
 
 Player::Player(Vec3 startPosition) : m_Position(startPosition) {
@@ -113,9 +110,59 @@ void Player::UpdateBody(float rot, float side, float forward, bool jumpPressed, 
     m_Velocity.x = hvel.x;
     m_Velocity.z = hvel.z;
 
+    Vec3 previousPosition = m_Position;
     m_Position.x += m_Velocity.x * delta;
     m_Position.y += m_Velocity.y * delta;
     m_Position.z += m_Velocity.z * delta;
+
+    ResolveCollisions(previousPosition);
+}
+
+void Player::ResolveCollisions(Vec3 previousPosition)
+{
+    m_IsGrounded = false;
+
+    for (const Collider& collider : m_vColliders) {
+        const float playerMinX = m_Position.x - PLAYER_RADIUS;
+        const float playerMaxX = m_Position.x + PLAYER_RADIUS;
+        const float playerMinY = m_Position.y;
+        const float playerMaxY = m_Position.y + PLAYER_HEIGHT;
+        const float playerMinZ = m_Position.z - PLAYER_RADIUS;
+        const float playerMaxZ = m_Position.z + PLAYER_RADIUS;
+
+        if (playerMaxX <= collider.min.x || playerMinX >= collider.max.x ||
+            playerMaxY <= collider.min.y || playerMinY >= collider.max.y ||
+            playerMaxZ <= collider.min.z || playerMinZ >= collider.max.z)
+            continue;
+
+        const bool wasBelow = previousPosition.y + PLAYER_HEIGHT <= collider.min.y;
+        const bool wasAbove = previousPosition.y >= collider.max.y;
+        const float pushX = std::min(playerMaxX - collider.min.x, collider.max.x - playerMinX);
+        const float pushY = std::min(playerMaxY - collider.min.y, collider.max.y - playerMinY);
+        const float pushZ = std::min(playerMaxZ - collider.min.z, collider.max.z - playerMinZ);
+
+        if (wasBelow && m_Velocity.y >= 0.0f) {
+            m_Position.y = collider.min.y - PLAYER_HEIGHT;
+            m_Velocity.y = 0.0f;
+        } else if (wasAbove && m_Velocity.y <= 0.0f) {
+            m_Position.y = collider.max.y;
+            m_Velocity.y = 0.0f;
+            m_IsGrounded = true;
+        } else if (pushX <= pushY && pushX <= pushZ) {
+            m_Position.x += m_Position.x < collider.min.x ? -pushX : pushX;
+            m_Velocity.x = 0.0f;
+        } else if (pushZ <= pushY) {
+            m_Position.z += m_Position.z < collider.min.z ? -pushZ : pushZ;
+            m_Velocity.z = 0.0f;
+        } else if (m_Position.y < collider.min.y) {
+            m_Position.y = collider.min.y - PLAYER_HEIGHT;
+            m_Velocity.y = 0.0f;
+        } else {
+            m_Position.y = collider.max.y;
+            m_Velocity.y = 0.0f;
+            m_IsGrounded = true;
+        }
+    }
 
     if (m_Position.y <= 0.0f) {
         m_Position.y = 0.0f;
@@ -124,25 +171,21 @@ void Player::UpdateBody(float rot, float side, float forward, bool jumpPressed, 
     }
 }
 
+void Player::DrawDebugCollision(Color color) const
+{
+    DrawCubeWiresV(
+        Vec3{m_Position.x, m_Position.y + PLAYER_HEIGHT * 0.5f, m_Position.z},
+        Vec3{PLAYER_RADIUS * 2.0f, PLAYER_HEIGHT, PLAYER_RADIUS * 2.0f},
+        color);
+}
+
 void Player::UpdateCameraFPS()
 {
     const Vec3 up { 0.0f, 1.0f, 0.0f };
     const Vec3 targetOffset { 0.0f, 0.0f, -1.0f };
 
     Vec3 yaw = RotateAroundAxis(targetOffset, up, m_LookRotation.x);
-
-    float maxAngleUp = AngleBetween(up, yaw);
-    maxAngleUp -= 0.001f;
-
-    if (-(m_LookRotation.y) > maxAngleUp)
-        m_LookRotation.y = -maxAngleUp;
-
-    float maxAngleDown = AngleBetween(-up, yaw);
-    maxAngleDown *= -1.0f;
-    maxAngleDown += 0.001f;
-
-    if (-(m_LookRotation.y) < maxAngleDown)
-        m_LookRotation.y = -maxAngleDown;
+    m_LookRotation.y = Clamp(m_LookRotation.y, -PI / 2 + 0.0001f, PI / 2 - 0.0001f);
 
     Vec3 right = yaw.cross(up).normalized();
 
@@ -160,6 +203,7 @@ void Player::UpdateCameraFPS()
     Vec3 bobbing = right * (headSin * bobSide);
     bobbing.y = fabsf(headCos * bobUp);
 
-    m_Camera.position = m_Camera.position + bobbing * m_WalkLerp;
+    Vec3 cameraBase { m_Position.x, m_Position.y + (BOTTOM_HEIGHT + m_HeadLerp), m_Position.z };
+    m_Camera.position = cameraBase + bobbing * m_WalkLerp;
     m_Camera.target = m_Camera.position + pitch;
 }

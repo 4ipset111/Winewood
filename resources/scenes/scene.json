@@ -1,0 +1,254 @@
+{
+    "entities": [
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "rotation": [
+                            0.0,
+                            -0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            5.002678871154785,
+                            0.0010000000474974513,
+                            5.401617050170898
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "Cube",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 0
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 0,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                }
+            ],
+            "is_group": false,
+            "name": "Plane",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            0.0,
+                            1.7778301239013672,
+                            0.2902566194534302
+                        ],
+                        "rotation": [
+                            0.0,
+                            -0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            0.0010000000474974513,
+                            0.0010000000474974513,
+                            0.0010000000474974513
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "Sphere",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 1
+                    },
+                    "enabled": false,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 0,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                },
+                {
+                    "data": {
+                        "light_color": "FFFFFFFF",
+                        "light_enabled": true,
+                        "light_intensity": 1.0,
+                        "light_position": [
+                            0.0,
+                            1.7778301239013672,
+                            0.2902566194534302
+                        ],
+                        "light_range": 5.0,
+                        "light_rotation": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "light_spot_angle": 30.0,
+                        "light_target": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "light_type": 1
+                    },
+                    "enabled": true,
+                    "type": "Light"
+                }
+            ],
+            "is_group": false,
+            "name": "Light",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            0.0,
+                            0.5,
+                            -0.5
+                        ],
+                        "rotation": [
+                            0.0,
+                            -0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "Cube",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 0
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 0,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                }
+            ],
+            "is_group": false,
+            "name": "Cube",
+            "parent_id": -1
+        }
+    ],
+    "version": "v1.0.0"
+}

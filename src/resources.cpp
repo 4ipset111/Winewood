@@ -1,9 +1,14 @@
-#include <resources.h>
+#include "resources.h"
 #include <type_traits>
 
 using namespace qc;
 
-ResourceManager Resources;
+ResourceManager gs_Resources;
+
+template<typename T>
+void ResourceManager::Storage<T>::UnloadAll() {
+    resources.clear();
+}
 
 template<typename T>
 ResourceManager::Storage<T>& ResourceManager::GetStorage()
@@ -91,6 +96,33 @@ void ResourceManager::Load<Font>(const std::string& name, const std::string& pat
     storage.resources.emplace(name, font);
 }
 
+template<>
+void ResourceManager::Load<qscene::Scene>(const std::string& name, const std::string& path) {
+    ResourceManager::Storage<qscene::Scene>& storage = GetStorage<qscene::Scene>();
+
+    if (storage.resources.find(name) != storage.resources.end()) {
+        return;
+    }
+
+    qscene::Scene scene = qscene::SceneLoader::ParseFile(path);
+    storage.resources.emplace(name, std::move(scene));
+}
+
+template<>
+void ResourceManager::Load<Model>(const std::string& name, const std::string& path) {
+    ResourceManager::Storage<Model>& storage = GetStorage<Model>();
+
+    if (storage.resources.find(name) != storage.resources.end()) {
+        return;
+    }
+
+    Model model = ::LoadModel(path.c_str());
+    if (model.meshCount == 0) {
+        throw std::runtime_error("Failed to load model: " + path);
+    }
+    storage.resources.emplace(name, model);
+}
+
 
 template<typename T>
 T& ResourceManager::Get(const std::string& name) {
@@ -168,6 +200,17 @@ void ResourceManager::Unload<Font>(const std::string& name) {
 }
 
 template<>
+void ResourceManager::Unload<Model>(const std::string& name) {
+    ResourceManager::Storage<Model>& storage = GetStorage<Model>();
+
+    auto it = storage.resources.find(name);
+    if (it != storage.resources.end()) {
+        ::UnloadModel(it->second);
+        storage.resources.erase(it);
+    }
+}
+
+template<>
 void ResourceManager::Storage<Texture2D>::UnloadAll() {
     for (auto& [name, texture] : resources)
         ::UnloadTexture(texture);
@@ -202,6 +245,14 @@ void ResourceManager::Storage<Font>::UnloadAll() {
     resources.clear();
 }
 
+template<>
+void ResourceManager::Storage<Model>::UnloadAll() {
+    for (auto& [name, model] : resources)
+        ::UnloadModel(model);
+
+    resources.clear();
+}
+
 
 void ResourceManager::UnloadAll() {
     for (auto& [type, storage] : storages)
@@ -214,8 +265,11 @@ template Texture2D& ResourceManager::Get<Texture2D>(const std::string&);
 template Sound& ResourceManager::Get<Sound>(const std::string&);
 template Music& ResourceManager::Get<Music>(const std::string&);
 template Font& ResourceManager::Get<Font>(const std::string&);
+template qscene::Scene& ResourceManager::Get<qscene::Scene>(const std::string&);
+template Model& ResourceManager::Get<Model>(const std::string&);
 
 template bool ResourceManager::Has<Texture2D>(const std::string&) const;
 template bool ResourceManager::Has<Sound>(const std::string&) const;
 template bool ResourceManager::Has<Music>(const std::string&) const;
 template bool ResourceManager::Has<Font>(const std::string&) const;
+template bool ResourceManager::Has<Model>(const std::string&) const;

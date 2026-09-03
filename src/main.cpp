@@ -1,36 +1,25 @@
-#include "QuarkCore/QuarkCore.hpp"
 #include "SDL3/SDL.h"
-#include "resources.h"
-#include "player.h"
-
+#include "game_scene.h"
 using namespace qc;
 
-int main()
-{
-	InitWindow(1280, 720, "Winewood", RendererType::OpenGL);
-	SDL_SetWindowRelativeMouseMode(GetNativeWindow(), true);
-	SetTargetFPS(GetMonitorRefreshRate(GetCurrentMonitor()));
-	DisableCursor();
+int main() {
+    InitWindow(1280, 720, "Winewood", RendererType::OpenGL);
+    SetTargetFPS(GetMonitorRefreshRate(GetCurrentMonitor()));
+    SDL_SetWindowRelativeMouseMode(GetNativeWindow(), true);
+    DisableCursor();
 
-	Player player(Vec3{ 0.0f, 0.0f, 0.0f });
+    game::GameScene scene;
+    if (!scene.Initialize()) {
+        CloseWindow();
+        return 1;
+    }
 
-	while (!WindowShouldClose())
-	{
-		player.Update();
+    while (!WindowShouldClose()) {
+        scene.Update();
+        scene.Draw();
+    }
 
-		BeginDrawing();
-		ClearBackground(Color{ 20, 24, 32, 255 });
-
-		BeginMode3D(player.GetCamera());
-		DrawCube(Vec3{0, 0, 0}, 2, 2, 2, RED);
-		EndMode3D();
-
-		DrawDebugText(TextFormat("%d", GetFPS()), 0, 0, 24, Color{ 255, 255, 255, 255 });
-		DrawDebugText("Winewood", 0, 24, 24, Color{ 255, 255, 255, 255 });
-
-		EndDrawing();
-	}
-
-	CloseWindow();
-	return 0;
+    scene.Shutdown();
+    CloseWindow();
+    return 0;
 }

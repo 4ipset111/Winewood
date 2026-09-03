@@ -13,10 +13,24 @@ if(NOT TARGET QuarkCore::QuarkCore)
 	add_library(QuarkCore::QuarkCore ALIAS QuarkCore)
 endif()
 
-add_executable(winewood
+set(EXTERNAL_FILES
+	external/nlohmann/json.hpp
+)
+
+set(SOURCE_FILES
 	src/main.cpp
+	src/game_scene.cpp
+	src/lightning.cpp
+	src/scene_loader.cpp
 	src/player.cpp
 	src/resources.cpp
+)
+
+include_directories(include)
+
+add_executable(winewood
+	${EXTERNAL_FILES}
+	${SOURCE_FILES}
 )
 
 add_custom_command(TARGET winewood POST_BUILD
@@ -32,6 +46,7 @@ target_link_libraries(winewood PRIVATE
 )
 
 target_include_directories(winewood PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}/external
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
