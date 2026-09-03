@@ -41,13 +41,9 @@ bool GameScene::Initialize() {
         m_ImpactModel.materials[0].maps[MATERIAL_MAP_ALBEDO].color = WHITE;
     }
 
-    for (int i = 0; i < static_cast<int>(m_aShootSounds.size()); ++i) {
-        const std::string name = TextFormat("tokarev_shoot_%d", i + 1);
-        const std::string path = TextFormat(
-            "resources/sounds/Tokarev_Shoot_%d.wav", i + 1);
-        gs_Resources.Load<Sound>(name, path);
-        m_aShootSounds[i] = gs_Resources.Get<Sound>(name);
-    }
+    m_pWeapon = new TokarevWeapon();
+    if (!m_pWeapon->Initialize())
+        return false;
 
     std::vector<Player::Collider> colliders;
     for (const auto& entity : m_pScene->entities) {
@@ -107,53 +103,12 @@ void GameScene::Update() {
     m_vImpactMarks.erase(std::remove_if(m_vImpactMarks.begin(), m_vImpactMarks.end(),
         [](const ImpactMark& impact) { return impact.lifetime <= 0.0f; }), m_vImpactMarks.end());
 
-    if (m_CurrentShootSound.stream.buffer) {
-        m_CurrentShootElapsed += GetFrameTime();
-        constexpr float fadeDuration = 0.12f;
-        const float fadeStart = std::max(0.0f, m_CurrentShootDuration - fadeDuration);
-        if (m_CurrentShootElapsed >= fadeStart && m_CurrentShootDuration > 0.0f) {
-            const float fadeProgress = (m_CurrentShootElapsed - fadeStart) / fadeDuration;
-            m_CurrentShootVolume = 2.0f * (1.0f - Clamp(fadeProgress, 0.0f, 1.0f));
-            SetSoundVolume(m_CurrentShootSound, m_CurrentShootVolume);
-        }
-    }
+    const std::optional<WeaponShot> shot =
+        m_pWeapon->Update(m_Player.GetCamera(), GetFrameTime());
+    if (shot) {
+        m_Player.ApplyRecoil(shot->recoilPitch);
 
-    if (m_FadingShootSound.stream.buffer && m_FadingShootVolume > 0.0f) {
-        m_FadingShootVolume = std::max(0.0f,
-            m_FadingShootVolume - GetFrameTime() / 0.12f);
-        SetSoundVolume(m_FadingShootSound, m_FadingShootVolume);
-        if (m_FadingShootVolume == 0.0f)
-            StopSound(m_FadingShootSound);
-    }
-
-    if (IsMouseButtonPressed(MouseButton::Left) && !m_ShootPending) {
-        m_ShootPending = true;
-        m_ShootDelay = 0.10f;
-    }
-
-    m_ShootDelay -= GetFrameTime();
-    if (m_ShootPending && m_ShootDelay <= 0.0f) {
-        m_ShootPending = false;
-        if (m_FadingShootSound.stream.buffer)
-            StopSound(m_FadingShootSound);
-        m_FadingShootSound = m_CurrentShootSound;
-        m_FadingShootVolume = m_CurrentShootVolume;
-
-        m_CurrentShootSound = m_aShootSounds[m_ShootSoundIndex];
-        m_ShootSoundIndex = (m_ShootSoundIndex + 1) % static_cast<int>(m_aShootSounds.size());
-        m_CurrentShootVolume = 2.0f;
-        m_CurrentShootElapsed = 0.0f;
-        m_CurrentShootDuration = m_CurrentShootSound.stream.sampleRate > 0
-            ? static_cast<float>(m_CurrentShootSound.frameCount)
-                / static_cast<float>(m_CurrentShootSound.stream.sampleRate)
-            : 0.0f;
-        SetSoundVolume(m_CurrentShootSound, m_CurrentShootVolume);
-        SetSoundPan(m_CurrentShootSound, 0.0f);
-        PlaySound(m_CurrentShootSound);
-        m_Player.ApplyRecoil(5.0f * DEG2RAD);
-
-        const Camera3D& camera = m_Player.GetCamera();
-        Ray ray{camera.position, (camera.target - camera.position).normalized()};
+        const Ray& ray = shot->ray;
         RayCollision nearest{};
         nearest.distance = std::numeric_limits<float>::max();
         auto testModel = [&](const Model& model, const Matrix& transform) {
@@ -290,6 +245,11 @@ void GameScene::Shutdown() {
     m_Lightning.Shutdown();
     if (IsShaderValid(m_LightingShader)) UnloadShader(m_LightingShader);
     if (IsShaderValid(m_ShadowShader)) UnloadShader(m_ShadowShader);
+    if (m_pWeapon) {
+        m_pWeapon->Shutdown();
+        delete m_pWeapon;
+        m_pWeapon = nullptr;
+    }
     gs_Resources.UnloadAll();
 }
 
