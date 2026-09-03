@@ -15,6 +15,7 @@ endif()
 
 add_executable(winewood
 	src/main.cpp
+	src/player.cpp
 	src/resources.cpp
 )
 
