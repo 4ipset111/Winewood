@@ -18,6 +18,13 @@ add_executable(winewood
 	src/resources.cpp
 )
 
+add_custom_command(TARGET winewood POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources
+        $<TARGET_FILE_DIR:winewood>/resources
+    COMMENT "Copying resources directory..."
+)
+
 target_link_libraries(winewood PRIVATE
 	QuarkCore::QuarkCore
 	QuarkCore::OpenGL
