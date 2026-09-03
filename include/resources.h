@@ -52,4 +52,7 @@ void ResourceManager::Load<qscene::Scene>(const std::string& name, const std::st
 template<>
 void ResourceManager::Load<qc::Model>(const std::string& name, const std::string& path);
 
+template<>
+void ResourceManager::Load<qc::Sound>(const std::string& name, const std::string& path);
+
 #endif // RESOURCES_H

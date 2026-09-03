@@ -48,6 +48,7 @@ void Player::Update() {
     UpdateBody(m_LookRotation.x, sideway, forward, jumpPressed, crouching);
 
     float delta = GetFrameTime();
+    m_RecoilPitch = Lerp(m_RecoilPitch, 0.0f, 7.0f * delta);
     m_HeadLerp = Lerp(m_HeadLerp, crouching ? CROUCH_HEIGHT : STAND_HEIGHT, 20.0f * delta);
     m_Camera.position = Vec3{ m_Position.x, m_Position.y + (BOTTOM_HEIGHT + m_HeadLerp), m_Position.z };
 
@@ -66,6 +67,11 @@ void Player::Update() {
     m_Lean.y = Lerp(m_Lean.y, forward * 0.015f, 10.0f * delta);
 
     UpdateCameraFPS();
+}
+
+void Player::ApplyRecoil(float pitch)
+{
+    m_RecoilPitch += pitch;
 }
 
 void Player::UpdateBody(float rot, float side, float forward, bool jumpPressed, bool crouchHold)
@@ -189,7 +195,7 @@ void Player::UpdateCameraFPS()
 
     Vec3 right = yaw.cross(up).normalized();
 
-    float pitchAngle = -m_LookRotation.y - m_Lean.y;
+    float pitchAngle = -m_LookRotation.y - m_Lean.y - m_RecoilPitch;
     pitchAngle = Clamp(pitchAngle, -PI / 2 + 0.0001f, PI / 2 - 0.0001f);
     Vec3 pitch = RotateAroundAxis(yaw, right, pitchAngle);
 

@@ -16,6 +16,7 @@ public:
     explicit Player(Vec3 startPosition = Vec3{ 0.0f, 0.0f, 0.0f });
 
     void Update();
+    void ApplyRecoil(float pitch);
 
     const Camera3D& GetCamera() const { return m_Camera; }
     Vec3 GetPosition() const { return m_Position; }
@@ -47,6 +48,7 @@ private:
     float m_HeadTimer = 0.0f;
     float m_WalkLerp = 0.0f;
     float m_HeadLerp = 1.0f;
+    float m_RecoilPitch = 0.0f;
 };
 
 #endif // PLAYER_H

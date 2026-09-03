@@ -4,7 +4,10 @@ using namespace qc;
 
 #include "resources.h"
 
+#include <array>
+#include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace game {
 
@@ -17,6 +20,33 @@ bool GameScene::Initialize() {
     if (!IsShaderValid(m_LightingShader) || !IsShaderValid(m_ShadowShader)) {
         TraceLog(LogLevel::Error, "SCENE", "Could not load lighting shaders");
         return false;
+    }
+
+    m_HandModel = LoadModel("resources/models/hand/RiggedLowpolyHand.obj");
+    if (!IsModelValid(m_HandModel)) {
+        TraceLog(LogLevel::Error, "SCENE", "Could not load first-person hand model");
+        return false;
+    }
+    Texture2D handTexture = qscene::SceneLoader::LoadMaterialTexture(
+        "resources/models/hand/hand.png");
+    if (handTexture.valid && m_HandModel.materialCount > 0 && m_HandModel.materials[0].maps) {
+        m_HandModel.materials[0].maps[MATERIAL_MAP_ALBEDO].color = WHITE;
+        m_HandModel.materials[0].maps[MATERIAL_MAP_ALBEDO].texture = handTexture;
+    }
+    gs_Resources.Load<Texture2D>("bullet_impact", "resources/textures/Bullet_Impact.png");
+    m_BulletImpactTexture = gs_Resources.Get<Texture2D>("bullet_impact");
+    m_ImpactModel = LoadModelFromMesh(GenMeshPlane(1.0f, 1.0f, 1, 1));
+    if (m_ImpactModel.materialCount > 0 && m_ImpactModel.materials[0].maps) {
+        m_ImpactModel.materials[0].maps[MATERIAL_MAP_ALBEDO].texture = m_BulletImpactTexture;
+        m_ImpactModel.materials[0].maps[MATERIAL_MAP_ALBEDO].color = WHITE;
+    }
+
+    for (int i = 0; i < static_cast<int>(m_aShootSounds.size()); ++i) {
+        const std::string name = TextFormat("tokarev_shoot_%d", i + 1);
+        const std::string path = TextFormat(
+            "resources/sounds/Tokarev_Shoot_%d.wav", i + 1);
+        gs_Resources.Load<Sound>(name, path);
+        m_aShootSounds[i] = gs_Resources.Get<Sound>(name);
     }
 
     std::vector<Player::Collider> colliders;
@@ -62,6 +92,8 @@ bool GameScene::Initialize() {
 
     m_Lightning.Initialize(*m_pScene);
     m_Lightning.PrepareModel(m_PrimitiveModel, m_LightingShader);
+    m_Lightning.PrepareModel(m_HandModel, m_LightingShader);
+    m_Lightning.PrepareModel(m_ImpactModel, m_LightingShader);
     for (const auto& path : m_vModelPaths)
         m_Lightning.PrepareModel(gs_Resources.Get<Model>(path), m_LightingShader);
     return true;
@@ -69,6 +101,88 @@ bool GameScene::Initialize() {
 
 void GameScene::Update() {
     m_Player.Update();
+
+    for (auto& impact : m_vImpactMarks)
+        impact.lifetime -= GetFrameTime();
+    m_vImpactMarks.erase(std::remove_if(m_vImpactMarks.begin(), m_vImpactMarks.end(),
+        [](const ImpactMark& impact) { return impact.lifetime <= 0.0f; }), m_vImpactMarks.end());
+
+    if (m_CurrentShootSound.stream.buffer) {
+        m_CurrentShootElapsed += GetFrameTime();
+        constexpr float fadeDuration = 0.12f;
+        const float fadeStart = std::max(0.0f, m_CurrentShootDuration - fadeDuration);
+        if (m_CurrentShootElapsed >= fadeStart && m_CurrentShootDuration > 0.0f) {
+            const float fadeProgress = (m_CurrentShootElapsed - fadeStart) / fadeDuration;
+            m_CurrentShootVolume = 2.0f * (1.0f - Clamp(fadeProgress, 0.0f, 1.0f));
+            SetSoundVolume(m_CurrentShootSound, m_CurrentShootVolume);
+        }
+    }
+
+    if (m_FadingShootSound.stream.buffer && m_FadingShootVolume > 0.0f) {
+        m_FadingShootVolume = std::max(0.0f,
+            m_FadingShootVolume - GetFrameTime() / 0.12f);
+        SetSoundVolume(m_FadingShootSound, m_FadingShootVolume);
+        if (m_FadingShootVolume == 0.0f)
+            StopSound(m_FadingShootSound);
+    }
+
+    if (IsMouseButtonPressed(MouseButton::Left) && !m_ShootPending) {
+        m_ShootPending = true;
+        m_ShootDelay = 0.10f;
+    }
+
+    m_ShootDelay -= GetFrameTime();
+    if (m_ShootPending && m_ShootDelay <= 0.0f) {
+        m_ShootPending = false;
+        if (m_FadingShootSound.stream.buffer)
+            StopSound(m_FadingShootSound);
+        m_FadingShootSound = m_CurrentShootSound;
+        m_FadingShootVolume = m_CurrentShootVolume;
+
+        m_CurrentShootSound = m_aShootSounds[m_ShootSoundIndex];
+        m_ShootSoundIndex = (m_ShootSoundIndex + 1) % static_cast<int>(m_aShootSounds.size());
+        m_CurrentShootVolume = 2.0f;
+        m_CurrentShootElapsed = 0.0f;
+        m_CurrentShootDuration = m_CurrentShootSound.stream.sampleRate > 0
+            ? static_cast<float>(m_CurrentShootSound.frameCount)
+                / static_cast<float>(m_CurrentShootSound.stream.sampleRate)
+            : 0.0f;
+        SetSoundVolume(m_CurrentShootSound, m_CurrentShootVolume);
+        SetSoundPan(m_CurrentShootSound, 0.0f);
+        PlaySound(m_CurrentShootSound);
+        m_Player.ApplyRecoil(5.0f * DEG2RAD);
+
+        const Camera3D& camera = m_Player.GetCamera();
+        Ray ray{camera.position, (camera.target - camera.position).normalized()};
+        RayCollision nearest{};
+        nearest.distance = std::numeric_limits<float>::max();
+        auto testModel = [&](const Model& model, const Matrix& transform) {
+            for (int meshIndex = 0; meshIndex < model.meshCount; ++meshIndex) {
+                RayCollision collision = GetRayCollisionMesh(ray, model.meshes[meshIndex], transform);
+                if (collision.hit && collision.distance < nearest.distance)
+                    nearest = collision;
+            }
+        };
+
+        for (const auto& entity : m_pScene->entities) {
+            if (!entity.mesh || !entity.mesh->enabled) continue;
+            Matrix transform = qscene::SceneLoader::BuildTransformMatrix(entity.transform);
+            if (entity.mesh->is_primitive) {
+                testModel(m_PrimitiveModel, transform);
+            } else {
+                const std::string path = qscene::SceneLoader::RemapAssetPath(entity.mesh->asset_name);
+                if (gs_Resources.Has<Model>(path))
+                    testModel(gs_Resources.Get<Model>(path), transform);
+            }
+        }
+
+        if (nearest.hit) {
+            m_vImpactMarks.push_back(ImpactMark{
+                nearest.point + nearest.normal * 0.002f,
+                nearest.normal,
+                4.0f});
+        }
+    }
 }
 
 void GameScene::Draw() {
@@ -111,6 +225,53 @@ void GameScene::Draw() {
         }
     }
 
+    for (const auto& impact : m_vImpactMarks) {
+        const Vec3 worldUp{0.0f, 1.0f, 0.0f};
+        const Vec3 fallbackAxis{1.0f, 0.0f, 0.0f};
+        Vec3 tangent = impact.normal.cross(worldUp);
+        if (tangent.length() < 0.01f)
+            tangent = impact.normal.cross(fallbackAxis);
+        tangent = tangent.normalized();
+        const Vec3 bitangent = impact.normal.cross(tangent).normalized();
+        constexpr float impactSize = 0.12f;
+
+        m_ImpactModel.transform = Matrix::identity();
+        m_ImpactModel.transform.m[0] = tangent.x * impactSize;
+        m_ImpactModel.transform.m[1] = tangent.y * impactSize;
+        m_ImpactModel.transform.m[2] = tangent.z * impactSize;
+        m_ImpactModel.transform.m[4] = impact.normal.x * impactSize;
+        m_ImpactModel.transform.m[5] = impact.normal.y * impactSize;
+        m_ImpactModel.transform.m[6] = impact.normal.z * impactSize;
+        m_ImpactModel.transform.m[8] = bitangent.x * impactSize;
+        m_ImpactModel.transform.m[9] = bitangent.y * impactSize;
+        m_ImpactModel.transform.m[10] = bitangent.z * impactSize;
+        m_ImpactModel.transform.m[12] = impact.position.x;
+        m_ImpactModel.transform.m[13] = impact.position.y;
+        m_ImpactModel.transform.m[14] = impact.position.z;
+        DrawModel(m_ImpactModel, Vec3{0, 0, 0}, 1.0f, WHITE);
+    }
+
+    const Vec3 cameraForward = (camera.target - camera.position).normalized();
+    const Vec3 cameraRight = cameraForward.cross(camera.up).normalized();
+    const Vec3 cameraUp = cameraRight.cross(cameraForward).normalized();
+    const Vec3 handPosition = camera.position + cameraRight * 0.60f
+        + cameraUp * -0.70f + cameraForward * 0.65f;
+    constexpr float handScale = 0.14f;
+    m_HandModel.transform = Matrix::identity();
+    m_HandModel.transform.m[0] = -cameraRight.x * handScale;
+    m_HandModel.transform.m[1] = -cameraRight.y * handScale;
+    m_HandModel.transform.m[2] = -cameraRight.z * handScale;
+    m_HandModel.transform.m[4] = cameraUp.x * handScale;
+    m_HandModel.transform.m[5] = cameraUp.y * handScale;
+    m_HandModel.transform.m[6] = cameraUp.z * handScale;
+    m_HandModel.transform.m[8] = cameraForward.x * handScale;
+    m_HandModel.transform.m[9] = cameraForward.y * handScale;
+    m_HandModel.transform.m[10] = cameraForward.z * handScale;
+    m_HandModel.transform.m[12] = handPosition.x;
+    m_HandModel.transform.m[13] = handPosition.y;
+    m_HandModel.transform.m[14] = handPosition.z;
+    DrawModel(m_HandModel, Vec3{0, 0, 0}, 1.0f, WHITE);
+
     m_Lightning.DrawDebugLights(*m_pScene);
 
     m_Player.DrawDebugCollision(RED);
@@ -124,6 +285,8 @@ void GameScene::Draw() {
 
 void GameScene::Shutdown() {
     if (m_PrimitiveModel.meshCount != 0) UnloadModel(m_PrimitiveModel);
+    if (m_HandModel.meshCount != 0) UnloadModel(m_HandModel);
+    if (m_ImpactModel.meshCount != 0) UnloadModel(m_ImpactModel);
     m_Lightning.Shutdown();
     if (IsShaderValid(m_LightingShader)) UnloadShader(m_LightingShader);
     if (IsShaderValid(m_ShadowShader)) UnloadShader(m_ShadowShader);
