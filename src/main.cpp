@@ -1,4 +1,5 @@
 #include "QuarkCore/QuarkCore.hpp"
+#include "SDL3/SDL.h"
 #include "resources.h"
 #include "player.h"
 
@@ -7,6 +8,7 @@ using namespace qc;
 int main()
 {
 	InitWindow(1280, 720, "Winewood", RendererType::OpenGL);
+	SDL_SetWindowRelativeMouseMode(GetNativeWindow(), true);
 	SetTargetFPS(GetMonitorRefreshRate(GetCurrentMonitor()));
 	DisableCursor();
 
