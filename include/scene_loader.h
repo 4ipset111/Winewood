@@ -64,6 +64,7 @@ struct UnknownComponent {
 
 struct Entity {
     std::string name;
+    std::vector<std::string> tags;
     int parent_id = -1;
     bool is_group = false;
     Transform transform;

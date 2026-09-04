@@ -39,6 +39,7 @@ private:
     Vec3 m_Velocity{ 0.0f, 0.0f, 0.0f };
     Vec3 m_Direction{ 0.0f, 0.0f, 0.0f };
     bool m_IsGrounded = false;
+    float m_JumpBufferTimer = 0.0f;
     std::vector<Collider> m_vColliders;
 
     Vec2 m_LookRotation{ 0.0f, 0.0f };

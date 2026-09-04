@@ -303,7 +303,10 @@
             ],
             "is_group": false,
             "name": "Plane",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": [
+                "Ground"
+            ]
         },
         {
             "components": [
@@ -405,7 +408,8 @@
             ],
             "is_group": false,
             "name": "Light",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         },
         {
             "components": [
@@ -481,7 +485,8 @@
             ],
             "is_group": false,
             "name": "scene",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         },
         {
             "components": [
@@ -557,7 +562,8 @@
             ],
             "is_group": false,
             "name": "Jersey_barrier",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         },
         {
             "components": [
@@ -633,7 +639,8 @@
             ],
             "is_group": false,
             "name": "Barrier",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         },
         {
             "components": [
@@ -709,7 +716,8 @@
             ],
             "is_group": false,
             "name": "lamp",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         },
         {
             "components": [
@@ -811,7 +819,8 @@
             ],
             "is_group": false,
             "name": "lamp_light",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         },
         {
             "components": [
@@ -887,7 +896,8 @@
             ],
             "is_group": false,
             "name": "lamp(2)",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         },
         {
             "components": [
@@ -989,7 +999,8 @@
             ],
             "is_group": false,
             "name": "Light (1)",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         },
         {
             "components": [
@@ -1065,7 +1076,8 @@
             ],
             "is_group": false,
             "name": "house",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         },
         {
             "components": [
@@ -1141,7 +1153,8 @@
             ],
             "is_group": false,
             "name": "Cube",
-            "parent_id": -1
+            "parent_id": -1,
+            "tags": []
         }
     ],
     "version": "v1.0.0"

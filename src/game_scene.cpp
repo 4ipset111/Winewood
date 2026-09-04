@@ -102,6 +102,7 @@ bool GameScene::Initialize() {
     for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
         const auto& entity = m_pScene->entities[entityIndex];
         if (!entity.mesh || !entity.mesh->enabled || !entity.mesh->is_primitive) continue;
+        if (std::find(entity.tags.begin(), entity.tags.end(), "Ground") == entity.tags.end()) continue;
 
         const Matrix worldTransform = qscene::SceneLoader::BuildWorldTransformMatrix(*m_pScene, entityIndex);
         Vec3 halfSize{

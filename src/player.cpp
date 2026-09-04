@@ -7,6 +7,7 @@ namespace {
     constexpr float MAX_SPEED = 20.0f;
     constexpr float CROUCH_SPEED = 5.0f;
     constexpr float JUMP_FORCE = 12.0f;
+    constexpr float JUMP_BUFFER_TIME = 0.15f;
     constexpr float MAX_ACCEL = 150.0f;
     constexpr float FRICTION = 0.86f;
     constexpr float AIR_DRAG = 0.98f;
@@ -80,12 +81,18 @@ void Player::UpdateBody(float rot, float side, float forward, bool jumpPressed, 
 
     float delta = GetFrameTime();
 
+    if (jumpPressed)
+        m_JumpBufferTimer = JUMP_BUFFER_TIME;
+    else
+        m_JumpBufferTimer = std::max(0.0f, m_JumpBufferTimer - delta);
+
     if (!m_IsGrounded)
         m_Velocity.y -= GRAVITY * delta;
 
-    if (m_IsGrounded && jumpPressed) {
+    if (m_IsGrounded && m_JumpBufferTimer > 0.0f) {
         m_Velocity.y = JUMP_FORCE;
         m_IsGrounded = false;
+        m_JumpBufferTimer = 0.0f;
     }
 
     Vec3 front { sinf(rot), 0.0f, cosf(rot) };

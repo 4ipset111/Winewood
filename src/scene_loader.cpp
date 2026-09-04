@@ -40,6 +40,9 @@ LightType parseLightType(const Json& value) {
 Entity parseEntity(const Json& value) {
     Entity entity;
     entity.name = value.value("name", "");
+    if (value.contains("tags") && value["tags"].is_array())
+        for (const auto& tag : value["tags"])
+            if (tag.is_string()) entity.tags.push_back(tag.get<std::string>());
     entity.parent_id = value.value("parent_id", -1);
     entity.is_group = value.value("is_group", false);
     if (!value.contains("components")) return entity;
