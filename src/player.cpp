@@ -1,5 +1,6 @@
 #include "player.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 namespace {
@@ -109,6 +110,9 @@ void Player::UpdateBody(float rot, float side, float forward, bool jumpPressed, 
     float decel = m_IsGrounded ? FRICTION : AIR_DRAG;
     Vec3 hvel{ m_Velocity.x * decel, 0.0f, m_Velocity.z * decel };
 
+    if (m_IsGrounded && side == 0.0f && forward == 0.0f)
+        hvel = Vec3{0.0f, 0.0f, 0.0f};
+
     if (hvel.length() < (MAX_SPEED * 0.01f))
         hvel = Vec3{ 0.0f, 0.0f, 0.0f };
 
@@ -133,55 +137,129 @@ void Player::UpdateBody(float rot, float side, float forward, bool jumpPressed, 
 
 void Player::ResolveCollisions(Vec3 previousPosition)
 {
+    const bool wasGrounded = m_IsGrounded;
     m_IsGrounded = false;
 
-    for (const Collider& collider : m_vColliders) {
-        const float playerMinX = m_Position.x - PLAYER_RADIUS;
-        const float playerMaxX = m_Position.x + PLAYER_RADIUS;
-        const float playerMinY = m_Position.y;
-        const float playerMaxY = m_Position.y + PLAYER_HEIGHT;
-        const float playerMinZ = m_Position.z - PLAYER_RADIUS;
-        const float playerMaxZ = m_Position.z + PLAYER_RADIUS;
+    constexpr float COLLISION_EPSILON = 0.001f;
+    constexpr float MAX_STEP_HEIGHT = 1.0f;
+    const auto castAxis = [&](float movement, const std::array<Vec3, 4>& origins, Vec3 direction,
+                              float extent, bool isVertical, bool movingPositive) {
+        const float rayLength = std::fabs(movement) + COLLISION_EPSILON;
+        if (rayLength <= COLLISION_EPSILON) return false;
 
-        if (playerMaxX <= collider.min.x || playerMinX >= collider.max.x ||
-            playerMaxY <= collider.min.y || playerMinY >= collider.max.y ||
-            playerMaxZ <= collider.min.z || playerMinZ >= collider.max.z)
-            continue;
+        const Collider* nearestCollider = nullptr;
+        RayCollision nearestCollision{};
+        float nearestDistance = rayLength;
+        for (const Vec3& origin : origins) {
+            Ray ray{origin, direction};
+            for (const Collider& collider : m_vColliders) {
+                for (const Collider::Triangle& triangle : collider.triangles) {
+                    const RayCollision collision = GetRayCollisionTriangle(
+                        ray, triangle.a, triangle.b, triangle.c);
+                    if (collision.hit && !isVertical && collider.isGround)
+                        continue;
+                    if (collision.hit && collision.distance <= nearestDistance) {
+                        nearestDistance = collision.distance;
+                        nearestCollision = collision;
+                        nearestCollider = &collider;
+                    }
+                }
+            }
+        }
+        if (!nearestCollider) return false;
 
-        const bool wasBelow = previousPosition.y + PLAYER_HEIGHT <= collider.min.y;
-        const bool wasAbove = previousPosition.y >= collider.max.y;
-        const float pushX = std::min(playerMaxX - collider.min.x, collider.max.x - playerMinX);
-        const float pushY = std::min(playerMaxY - collider.min.y, collider.max.y - playerMinY);
-        const float pushZ = std::min(playerMaxZ - collider.min.z, collider.max.z - playerMinZ);
+        const float contact = isVertical ? nearestCollision.point.y :
+            (direction.x != 0.0f ? nearestCollision.point.x : nearestCollision.point.z);
+        const float resolvedPosition = isVertical
+            ? (movingPositive
+                ? contact - PLAYER_HEIGHT - COLLISION_EPSILON
+                : contact + COLLISION_EPSILON)
+            : (movingPositive
+                ? contact - extent - COLLISION_EPSILON
+                : contact + extent + COLLISION_EPSILON);
+        if (isVertical) m_Position.y = resolvedPosition;
+        else if (direction.x != 0.0f) m_Position.x = resolvedPosition;
+        else m_Position.z = resolvedPosition;
 
-        if (wasBelow && m_Velocity.y >= 0.0f) {
-            m_Position.y = collider.min.y - PLAYER_HEIGHT;
+        if (isVertical) {
             m_Velocity.y = 0.0f;
-        } else if (wasAbove && m_Velocity.y <= 0.0f) {
-            m_Position.y = collider.max.y;
-            m_Velocity.y = 0.0f;
-            m_IsGrounded = true;
-        } else if (pushX <= pushY && pushX <= pushZ) {
-            m_Position.x += m_Position.x < collider.min.x ? -pushX : pushX;
+            if (!movingPositive && nearestCollider->isGround)
+                m_IsGrounded = true;
+        } else if (direction.x != 0.0f) {
             m_Velocity.x = 0.0f;
-        } else if (pushZ <= pushY) {
-            m_Position.z += m_Position.z < collider.min.z ? -pushZ : pushZ;
-            m_Velocity.z = 0.0f;
-        } else if (m_Position.y < collider.min.y) {
-            m_Position.y = collider.min.y - PLAYER_HEIGHT;
-            m_Velocity.y = 0.0f;
         } else {
-            m_Position.y = collider.max.y;
+            m_Velocity.z = 0.0f;
+        }
+        return true;
+    };
+
+    const float deltaX = m_Position.x - previousPosition.x;
+    const float deltaY = m_Position.y - previousPosition.y;
+    const float deltaZ = m_Position.z - previousPosition.z;
+    const float sideOffset = PLAYER_RADIUS * 0.8f;
+    const float lowerRayHeight = previousPosition.y + 0.05f;
+    const float upperRayHeight = previousPosition.y + PLAYER_HEIGHT - 0.05f;
+
+    castAxis(deltaX,
+        std::array<Vec3, 4>{Vec3{previousPosition.x + (deltaX >= 0.0f ? PLAYER_RADIUS : -PLAYER_RADIUS), lowerRayHeight, previousPosition.z - sideOffset},
+            Vec3{previousPosition.x + (deltaX >= 0.0f ? PLAYER_RADIUS : -PLAYER_RADIUS), lowerRayHeight, previousPosition.z + sideOffset},
+            Vec3{previousPosition.x + (deltaX >= 0.0f ? PLAYER_RADIUS : -PLAYER_RADIUS), upperRayHeight, previousPosition.z - sideOffset},
+            Vec3{previousPosition.x + (deltaX >= 0.0f ? PLAYER_RADIUS : -PLAYER_RADIUS), upperRayHeight, previousPosition.z + sideOffset}},
+        Vec3{deltaX >= 0.0f ? 1.0f : -1.0f, 0.0f, 0.0f}, PLAYER_RADIUS, false, deltaX >= 0.0f);
+    castAxis(deltaZ,
+        std::array<Vec3, 4>{Vec3{previousPosition.x - sideOffset, lowerRayHeight,
+                previousPosition.z + (deltaZ >= 0.0f ? PLAYER_RADIUS : -PLAYER_RADIUS)},
+            Vec3{previousPosition.x + sideOffset, lowerRayHeight,
+                previousPosition.z + (deltaZ >= 0.0f ? PLAYER_RADIUS : -PLAYER_RADIUS)},
+            Vec3{previousPosition.x - sideOffset, upperRayHeight,
+                previousPosition.z + (deltaZ >= 0.0f ? PLAYER_RADIUS : -PLAYER_RADIUS)},
+            Vec3{previousPosition.x + sideOffset, upperRayHeight,
+                previousPosition.z + (deltaZ >= 0.0f ? PLAYER_RADIUS : -PLAYER_RADIUS)}},
+        Vec3{0.0f, 0.0f, deltaZ >= 0.0f ? 1.0f : -1.0f}, PLAYER_RADIUS, false, deltaZ >= 0.0f);
+
+    bool snappedToGround = false;
+    if ((wasGrounded || m_Velocity.y <= 0.0f) && m_Velocity.y <= 0.0f) {
+        const float groundRayLength = MAX_STEP_HEIGHT + COLLISION_EPSILON;
+        const Collider* groundCollider = nullptr;
+        RayCollision groundCollision{};
+        float nearestGroundDistance = groundRayLength;
+        for (const Vec3& offset : std::array<Vec3, 1>{Vec3{0.0f, 0.0f, 0.0f}}) {
+            const Ray groundRay{
+                Vec3{m_Position.x + offset.x, m_Position.y + MAX_STEP_HEIGHT,
+                    m_Position.z + offset.z},
+                Vec3{0.0f, -1.0f, 0.0f}};
+            for (const Collider& collider : m_vColliders) {
+                if (!collider.isGround) continue;
+                for (const Collider::Triangle& triangle : collider.triangles) {
+                    const RayCollision collision = GetRayCollisionTriangle(
+                        groundRay, triangle.a, triangle.b, triangle.c);
+                    if (collision.hit && collision.distance <= nearestGroundDistance) {
+                        nearestGroundDistance = collision.distance;
+                        groundCollision = collision;
+                        groundCollider = &collider;
+                    }
+                }
+            }
+        }
+        if (groundCollider) {
+            m_Position.y = groundCollision.point.y + COLLISION_EPSILON;
             m_Velocity.y = 0.0f;
             m_IsGrounded = true;
+            snappedToGround = true;
         }
     }
 
-    if (m_Position.y <= 0.0f) {
-        m_Position.y = 0.0f;
-        m_Velocity.y = 0.0f;
-        m_IsGrounded = true;
-    }
+    if (!snappedToGround) castAxis(deltaY,
+        std::array<Vec3, 4>{Vec3{previousPosition.x - sideOffset,
+                previousPosition.y + (deltaY >= 0.0f ? PLAYER_HEIGHT : 0.0f), previousPosition.z - sideOffset},
+            Vec3{previousPosition.x + sideOffset,
+                previousPosition.y + (deltaY >= 0.0f ? PLAYER_HEIGHT : 0.0f), previousPosition.z - sideOffset},
+            Vec3{previousPosition.x - sideOffset,
+                previousPosition.y + (deltaY >= 0.0f ? PLAYER_HEIGHT : 0.0f), previousPosition.z + sideOffset},
+            Vec3{previousPosition.x + sideOffset,
+                previousPosition.y + (deltaY >= 0.0f ? PLAYER_HEIGHT : 0.0f), previousPosition.z + sideOffset}},
+        Vec3{0.0f, deltaY >= 0.0f ? 1.0f : -1.0f, 0.0f},
+        PLAYER_HEIGHT, true, deltaY >= 0.0f);
 }
 
 void Player::DrawDebugCollision(Color color) const

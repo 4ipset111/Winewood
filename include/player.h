@@ -11,6 +11,13 @@ public:
     struct Collider {
         Vec3 min;
         Vec3 max;
+        bool isGround = false;
+        struct Triangle {
+            Vec3 a;
+            Vec3 b;
+            Vec3 c;
+        };
+        std::vector<Triangle> triangles;
     };
 
     explicit Player(Vec3 startPosition = Vec3{ 0.0f, 0.0f, 0.0f });

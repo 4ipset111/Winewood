@@ -98,24 +98,6 @@ bool GameScene::Initialize() {
     if (!m_pWeapon->Initialize())
         return false;
 
-    std::vector<Player::Collider> colliders;
-    for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
-        const auto& entity = m_pScene->entities[entityIndex];
-        if (!entity.mesh || !entity.mesh->enabled || !entity.mesh->is_primitive) continue;
-        if (std::find(entity.tags.begin(), entity.tags.end(), "Ground") == entity.tags.end()) continue;
-
-        const Matrix worldTransform = qscene::SceneLoader::BuildWorldTransformMatrix(*m_pScene, entityIndex);
-        Vec3 halfSize{
-            std::sqrt(worldTransform.m[0] * worldTransform.m[0] + worldTransform.m[4] * worldTransform.m[4] + worldTransform.m[8] * worldTransform.m[8]) * 0.5f,
-            std::sqrt(worldTransform.m[1] * worldTransform.m[1] + worldTransform.m[5] * worldTransform.m[5] + worldTransform.m[9] * worldTransform.m[9]) * 0.5f,
-            std::sqrt(worldTransform.m[2] * worldTransform.m[2] + worldTransform.m[6] * worldTransform.m[6] + worldTransform.m[10] * worldTransform.m[10]) * 0.5f};
-        const Vec3 worldPosition{worldTransform.m[12], worldTransform.m[13], worldTransform.m[14]};
-        colliders.push_back(Player::Collider{
-            worldPosition - halfSize,
-            worldPosition + halfSize});
-    }
-    m_Player.SetColliders(colliders);
-
     Mesh cubeMesh = GenMeshCube(1.0f, 1.0f, 1.0f);
     m_PrimitiveModel = LoadModelFromMesh(cubeMesh);
     for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
@@ -147,6 +129,89 @@ bool GameScene::Initialize() {
                     path.c_str(), entity.mesh->asset_name.c_str()));
         }
     }
+
+    std::vector<Player::Collider> colliders;
+    for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
+        const auto& entity = m_pScene->entities[entityIndex];
+        if (!entity.mesh || !entity.mesh->enabled) continue;
+
+        const Matrix worldTransform = qscene::SceneLoader::BuildWorldTransformMatrix(*m_pScene, entityIndex);
+        Vec3 boundsMin{std::numeric_limits<float>::max(), std::numeric_limits<float>::max(),
+            std::numeric_limits<float>::max()};
+        Vec3 boundsMax{std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(),
+            std::numeric_limits<float>::lowest()};
+        const auto includePoint = [&](const Vec3& point) {
+            const Vec3 worldPoint = Vec3Transform(point, worldTransform);
+            boundsMin.x = std::min(boundsMin.x, worldPoint.x);
+            boundsMin.y = std::min(boundsMin.y, worldPoint.y);
+            boundsMin.z = std::min(boundsMin.z, worldPoint.z);
+            boundsMax.x = std::max(boundsMax.x, worldPoint.x);
+            boundsMax.y = std::max(boundsMax.y, worldPoint.y);
+            boundsMax.z = std::max(boundsMax.z, worldPoint.z);
+        };
+        std::vector<Player::Collider::Triangle> triangles;
+        const auto includeTriangle = [&](const Vec3& a, const Vec3& b, const Vec3& c) {
+            triangles.push_back(Player::Collider::Triangle{
+                Vec3Transform(a, worldTransform), Vec3Transform(b, worldTransform),
+                Vec3Transform(c, worldTransform)});
+        };
+
+        if (entity.mesh->is_primitive) {
+            if (!entity.mesh->editable_vertices.empty()) {
+                for (const Vec3& vertex : entity.mesh->editable_vertices) includePoint(vertex);
+                for (size_t index = 0; index + 2 < entity.mesh->editable_indices.size(); index += 3) {
+                    const unsigned short first = entity.mesh->editable_indices[index];
+                    const unsigned short second = entity.mesh->editable_indices[index + 1];
+                    const unsigned short third = entity.mesh->editable_indices[index + 2];
+                    if (first < entity.mesh->editable_vertices.size() &&
+                        second < entity.mesh->editable_vertices.size() &&
+                        third < entity.mesh->editable_vertices.size())
+                        includeTriangle(entity.mesh->editable_vertices[first],
+                            entity.mesh->editable_vertices[second], entity.mesh->editable_vertices[third]);
+                }
+            } else {
+                const Mesh& mesh = m_PrimitiveModel.meshes[0];
+                for (int index = 0; index < mesh.triangleCount * 3; index += 3)
+                    includeTriangle(
+                        Vec3{mesh.vertices[mesh.indices[index] * 3], mesh.vertices[mesh.indices[index] * 3 + 1], mesh.vertices[mesh.indices[index] * 3 + 2]},
+                        Vec3{mesh.vertices[mesh.indices[index + 1] * 3], mesh.vertices[mesh.indices[index + 1] * 3 + 1], mesh.vertices[mesh.indices[index + 1] * 3 + 2]},
+                        Vec3{mesh.vertices[mesh.indices[index + 2] * 3], mesh.vertices[mesh.indices[index + 2] * 3 + 1], mesh.vertices[mesh.indices[index + 2] * 3 + 2]});
+                for (int x : {-1, 1})
+                    for (int y : {-1, 1})
+                        for (int z : {-1, 1})
+                            includePoint(Vec3{0.5f * x, 0.5f * y, 0.5f * z});
+            }
+        } else {
+            const std::string path = qscene::SceneLoader::RemapAssetPath(entity.mesh->asset_name);
+            if (!gs_Resources.Has<Model>(path)) continue;
+            const BoundingBox modelBounds = GetModelBoundingBox(gs_Resources.Get<Model>(path));
+            for (int meshIndex = 0; meshIndex < gs_Resources.Get<Model>(path).meshCount; ++meshIndex) {
+                const Mesh& mesh = gs_Resources.Get<Model>(path).meshes[meshIndex];
+                for (int index = 0; index < mesh.triangleCount * 3; index += 3) {
+                    const auto vertex = [&](int vertexIndex) {
+                        return Vec3{mesh.vertices[vertexIndex * 3], mesh.vertices[vertexIndex * 3 + 1],
+                            mesh.vertices[vertexIndex * 3 + 2]};
+                    };
+                    const int first = mesh.indices ? mesh.indices[index] : index;
+                    const int second = mesh.indices ? mesh.indices[index + 1] : index + 1;
+                    const int third = mesh.indices ? mesh.indices[index + 2] : index + 2;
+                    includeTriangle(vertex(first), vertex(second), vertex(third));
+                }
+            }
+            for (int x : {0, 1})
+                for (int y : {0, 1})
+                    for (int z : {0, 1})
+                        includePoint(Vec3{
+                            x == 0 ? modelBounds.min.x : modelBounds.max.x,
+                            y == 0 ? modelBounds.min.y : modelBounds.max.y,
+                            z == 0 ? modelBounds.min.z : modelBounds.max.z});
+        }
+
+        colliders.push_back(Player::Collider{boundsMin, boundsMax,
+            std::find(entity.tags.begin(), entity.tags.end(), "Ground") != entity.tags.end(),
+            std::move(triangles)});
+    }
+    m_Player.SetColliders(colliders);
 
     m_Lightning.Initialize(*m_pScene);
     m_Lightning.PrepareModel(m_PrimitiveModel, m_LightingShader);
