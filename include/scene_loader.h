@@ -25,6 +25,10 @@ struct MeshComponent {
     std::string asset_name;
     int type = 0;
     bool is_primitive = true;
+    bool is_editable_mesh = false;
+    std::vector<qc::Vec3> editable_vertices;
+    std::vector<qc::Vec2> editable_texcoords;
+    std::vector<unsigned short> editable_indices;
 };
 
 struct MaterialComponent {
@@ -88,6 +92,7 @@ public:
     Scene LoadFromFile(const std::string& path) const;
     static Scene ParseFile(const std::string& path);
     static qc::Matrix BuildTransformMatrix(const Transform& transform);
+    static qc::Matrix BuildWorldTransformMatrix(const Scene& scene, int entityIndex);
     static std::string RemapAssetPath(const std::string& original);
     static qc::Vec4 ParseLightColor(const std::string& hex);
     static qc::Texture2D LoadMaterialTexture(const std::string& authoredPath);

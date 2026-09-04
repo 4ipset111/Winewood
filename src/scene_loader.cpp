@@ -58,6 +58,22 @@ Entity parseEntity(const Json& value) {
             mesh.asset_name = data.value("asset_name", "");
             mesh.type = data.value("type", 0);
             mesh.is_primitive = !hasFileExtension(mesh.asset_name);
+            mesh.is_editable_mesh = data.value("is_editable_mesh", false);
+            if (data.contains("editable_vertices") && data["editable_vertices"].is_array()) {
+                for (const auto& vertex : data["editable_vertices"]) {
+                    if (!vertex.is_array() || vertex.size() < 3) continue;
+                    mesh.editable_vertices.push_back(Vec3{vertex[0].get<float>(), vertex[1].get<float>(), vertex[2].get<float>()});
+                    mesh.editable_texcoords.push_back(vertex.size() >= 5
+                        ? Vec2{vertex[3].get<float>(), vertex[4].get<float>()} : Vec2{});
+                }
+            }
+            if (data.contains("editable_triangles") && data["editable_triangles"].is_array()) {
+                for (const auto& triangle : data["editable_triangles"]) {
+                    if (!triangle.is_array() || triangle.size() < 3) continue;
+                    for (int index = 0; index < 3; ++index)
+                        mesh.editable_indices.push_back(triangle[index].get<unsigned short>());
+                }
+            }
             entity.mesh = mesh;
         } else if (type == "Material") {
             MaterialComponent material;
@@ -65,6 +81,8 @@ Entity parseEntity(const Json& value) {
             material.color = parseColor(data["color"]);
             material.outline_color = parseColor(data["outline_color"]);
             material.texture_name = data.value("texture_name", "");
+            if (material.texture_name.empty())
+                material.texture_name = data.value("albedo_texture_name", "");
             material.metallic_texture_name = data.value("metallic_texture_name", "");
             material.normal_texture_name = data.value("normal_texture_name", "");
             material.roughness_texture_name = data.value("roughness_texture_name", "");
@@ -126,7 +144,18 @@ Matrix SceneLoader::BuildTransformMatrix(const Transform& transform) {
     Matrix rotation = MatrixRotateXYZ(Vec3{transform.rotation.x * DEG2RAD,
         transform.rotation.y * DEG2RAD, transform.rotation.z * DEG2RAD});
     Matrix translation = MatrixTranslate(transform.position.x, transform.position.y, transform.position.z);
-    return MatrixMultiply(MatrixMultiply(scale, rotation), translation);
+    return MatrixMultiply(MatrixMultiply(translation, rotation), scale);
+}
+
+Matrix SceneLoader::BuildWorldTransformMatrix(const Scene& scene, int entityIndex) {
+    if (entityIndex < 0 || entityIndex >= static_cast<int>(scene.entities.size()))
+        return MatrixIdentity();
+
+    Matrix world = BuildTransformMatrix(scene.entities[entityIndex].transform);
+    const int parentIndex = scene.entities[entityIndex].parent_id;
+    if (parentIndex >= 0 && parentIndex < static_cast<int>(scene.entities.size()) && parentIndex != entityIndex)
+        world = MatrixMultiply(BuildWorldTransformMatrix(scene, parentIndex), world);
+    return world;
 }
 
 std::string SceneLoader::RemapAssetPath(const std::string& original) {
@@ -193,7 +222,12 @@ void SceneLoader::ApplySceneMaterial(Model& model, const MaterialComponent& sour
         if (!material.maps) continue;
         
         material.maps[MATERIAL_MAP_ALBEDO].color = source.color;
-        if (albedo.valid) material.maps[MATERIAL_MAP_ALBEDO].texture = albedo;
+        Texture2D slotTexture = albedo;
+        if (i < static_cast<int>(source.material_slot_sources.size()) &&
+            !source.material_slot_sources[i].empty())
+            slotTexture = LoadMaterialTexture(source.material_slot_sources[i]);
+        if (slotTexture.valid || source.texture_source != 2)
+            material.maps[MATERIAL_MAP_ALBEDO].texture = slotTexture;
         if (metallic.valid) material.maps[MATERIAL_MAP_METALNESS].texture = metallic;
         if (normal.valid) material.maps[MATERIAL_MAP_NORMAL].texture = normal;
         if (roughness.valid) material.maps[MATERIAL_MAP_ROUGHNESS].texture = roughness;

@@ -10,6 +10,59 @@ using namespace qc;
 #include <limits>
 
 namespace game {
+namespace {
+
+Model BuildEditableModel(const qscene::MeshComponent& source) {
+    Mesh mesh{};
+    mesh.vertexCount = static_cast<int>(source.editable_vertices.size());
+    mesh.triangleCount = static_cast<int>(source.editable_indices.size() / 3);
+    if (mesh.vertexCount == 0 || mesh.triangleCount == 0) return Model{};
+
+    mesh.vertices = new float[mesh.vertexCount * 3]{};
+    mesh.texcoords = new float[mesh.vertexCount * 2]{};
+    mesh.normals = new float[mesh.vertexCount * 3]{};
+    mesh.indices = new unsigned short[mesh.triangleCount * 3]{};
+    for (int vertexIndex = 0; vertexIndex < mesh.vertexCount; ++vertexIndex) {
+        const Vec3& position = source.editable_vertices[vertexIndex];
+        const Vec2& texcoord = source.editable_texcoords[vertexIndex];
+        mesh.vertices[vertexIndex * 3] = position.x;
+        mesh.vertices[vertexIndex * 3 + 1] = position.y;
+        mesh.vertices[vertexIndex * 3 + 2] = position.z;
+        mesh.texcoords[vertexIndex * 2] = texcoord.x;
+        mesh.texcoords[vertexIndex * 2 + 1] = texcoord.y;
+    }
+    for (int index = 0; index < mesh.triangleCount * 3; ++index)
+        mesh.indices[index] = source.editable_indices[index];
+
+    for (int triangle = 0; triangle < mesh.triangleCount; ++triangle) {
+        const unsigned short first = mesh.indices[triangle * 3];
+        const unsigned short second = mesh.indices[triangle * 3 + 1];
+        const unsigned short third = mesh.indices[triangle * 3 + 2];
+        if (first >= mesh.vertexCount || second >= mesh.vertexCount || third >= mesh.vertexCount) continue;
+        const Vec3 edgeA{mesh.vertices[second * 3] - mesh.vertices[first * 3],
+            mesh.vertices[second * 3 + 1] - mesh.vertices[first * 3 + 1],
+            mesh.vertices[second * 3 + 2] - mesh.vertices[first * 3 + 2]};
+        const Vec3 edgeB{mesh.vertices[third * 3] - mesh.vertices[first * 3],
+            mesh.vertices[third * 3 + 1] - mesh.vertices[first * 3 + 1],
+            mesh.vertices[third * 3 + 2] - mesh.vertices[first * 3 + 2]};
+        const Vec3 normal = edgeA.cross(edgeB).normalized();
+        for (unsigned short vertex : {first, second, third}) {
+            mesh.normals[vertex * 3] += normal.x;
+            mesh.normals[vertex * 3 + 1] += normal.y;
+            mesh.normals[vertex * 3 + 2] += normal.z;
+        }
+    }
+    for (int vertexIndex = 0; vertexIndex < mesh.vertexCount; ++vertexIndex) {
+        Vec3 normal{mesh.normals[vertexIndex * 3], mesh.normals[vertexIndex * 3 + 1], mesh.normals[vertexIndex * 3 + 2]};
+        normal = normal.normalized();
+        mesh.normals[vertexIndex * 3] = normal.x;
+        mesh.normals[vertexIndex * 3 + 1] = normal.y;
+        mesh.normals[vertexIndex * 3 + 2] = normal.z;
+    }
+    return LoadModelFromMesh(mesh);
+}
+
+}
 
 bool GameScene::Initialize() {
     gs_Resources.Load<qscene::Scene>("scene", "resources/scenes/scene.json");
@@ -46,21 +99,29 @@ bool GameScene::Initialize() {
         return false;
 
     std::vector<Player::Collider> colliders;
-    for (const auto& entity : m_pScene->entities) {
+    for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
+        const auto& entity = m_pScene->entities[entityIndex];
         if (!entity.mesh || !entity.mesh->enabled || !entity.mesh->is_primitive) continue;
 
+        const Matrix worldTransform = qscene::SceneLoader::BuildWorldTransformMatrix(*m_pScene, entityIndex);
         Vec3 halfSize{
-            std::abs(entity.transform.scale.x) * 0.5f,
-            std::abs(entity.transform.scale.y) * 0.5f,
-            std::abs(entity.transform.scale.z) * 0.5f};
+            std::sqrt(worldTransform.m[0] * worldTransform.m[0] + worldTransform.m[4] * worldTransform.m[4] + worldTransform.m[8] * worldTransform.m[8]) * 0.5f,
+            std::sqrt(worldTransform.m[1] * worldTransform.m[1] + worldTransform.m[5] * worldTransform.m[5] + worldTransform.m[9] * worldTransform.m[9]) * 0.5f,
+            std::sqrt(worldTransform.m[2] * worldTransform.m[2] + worldTransform.m[6] * worldTransform.m[6] + worldTransform.m[10] * worldTransform.m[10]) * 0.5f};
+        const Vec3 worldPosition{worldTransform.m[12], worldTransform.m[13], worldTransform.m[14]};
         colliders.push_back(Player::Collider{
-            entity.transform.position - halfSize,
-            entity.transform.position + halfSize});
+            worldPosition - halfSize,
+            worldPosition + halfSize});
     }
     m_Player.SetColliders(colliders);
 
     Mesh cubeMesh = GenMeshCube(1.0f, 1.0f, 1.0f);
     m_PrimitiveModel = LoadModelFromMesh(cubeMesh);
+    for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
+        const auto& entity = m_pScene->entities[entityIndex];
+        if (entity.mesh && entity.mesh->enabled && entity.mesh->is_primitive && entity.mesh->is_editable_mesh)
+            m_vEditablePrimitiveModels.emplace(entityIndex, BuildEditableModel(*entity.mesh));
+    }
 
     for (const auto& entity : m_pScene->entities) {
         if (!entity.mesh || !entity.mesh->enabled || entity.mesh->is_primitive) continue;
@@ -88,6 +149,8 @@ bool GameScene::Initialize() {
 
     m_Lightning.Initialize(*m_pScene);
     m_Lightning.PrepareModel(m_PrimitiveModel, m_LightingShader);
+    for (auto& [entityIndex, model] : m_vEditablePrimitiveModels)
+        m_Lightning.PrepareModel(model, m_LightingShader);
     m_Lightning.PrepareModel(m_HandModel, m_LightingShader);
     m_Lightning.PrepareModel(m_ImpactModel, m_LightingShader);
     for (const auto& path : m_vModelPaths)
@@ -119,11 +182,15 @@ void GameScene::Update() {
             }
         };
 
-        for (const auto& entity : m_pScene->entities) {
+        for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
+            const auto& entity = m_pScene->entities[entityIndex];
             if (!entity.mesh || !entity.mesh->enabled) continue;
-            Matrix transform = qscene::SceneLoader::BuildTransformMatrix(entity.transform);
+            Matrix transform = qscene::SceneLoader::BuildWorldTransformMatrix(*m_pScene, entityIndex);
             if (entity.mesh->is_primitive) {
-                testModel(m_PrimitiveModel, transform);
+                const Model* modelToTest = &m_PrimitiveModel;
+                auto editableModel = m_vEditablePrimitiveModels.find(entityIndex);
+                if (editableModel != m_vEditablePrimitiveModels.end()) modelToTest = &editableModel->second;
+                testModel(*modelToTest, transform);
             } else {
                 const std::string path = qscene::SceneLoader::RemapAssetPath(entity.mesh->asset_name);
                 if (gs_Resources.Has<Model>(path))
@@ -141,8 +208,11 @@ void GameScene::Update() {
 }
 
 void GameScene::Draw() {
-    m_Lightning.RenderShadowPass(*m_pScene, m_PrimitiveModel, m_ShadowShader);
+    m_Lightning.RenderShadowPass(*m_pScene, m_PrimitiveModel,
+        m_vEditablePrimitiveModels, m_ShadowShader);
     m_Lightning.PrepareModel(m_PrimitiveModel, m_LightingShader);
+    for (auto& [entityIndex, model] : m_vEditablePrimitiveModels)
+        m_Lightning.PrepareModel(model, m_LightingShader);
     for (const auto& path : m_vModelPaths)
         m_Lightning.PrepareModel(gs_Resources.Get<Model>(path), m_LightingShader);
 
@@ -153,10 +223,11 @@ void GameScene::Draw() {
     Camera3D camera = m_Player.GetCamera();
     m_Lightning.ApplyLighting(m_LightingShader, camera);
 
-    for (const auto& entity : m_pScene->entities) {
+    for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
+        const auto& entity = m_pScene->entities[entityIndex];
         if (!entity.mesh || !entity.mesh->enabled) continue;
 
-        Matrix transform = qscene::SceneLoader::BuildTransformMatrix(entity.transform);
+        Matrix transform = qscene::SceneLoader::BuildWorldTransformMatrix(*m_pScene, entityIndex);
         Color tint = WHITE;
         if (entity.material && entity.material->enabled) {
             tint = Color{entity.material->color.r, entity.material->color.g,
@@ -164,10 +235,13 @@ void GameScene::Draw() {
         }
 
         if (entity.mesh->is_primitive) {
+                Model* primitiveModel = &m_PrimitiveModel;
+                auto editableModel = m_vEditablePrimitiveModels.find(entityIndex);
+                if (editableModel != m_vEditablePrimitiveModels.end()) primitiveModel = &editableModel->second;
             if (entity.material && entity.material->enabled)
-                qscene::SceneLoader::ApplySceneMaterial(m_PrimitiveModel, *entity.material);
-            m_PrimitiveModel.transform = transform;
-            DrawModel(m_PrimitiveModel, Vec3{0, 0, 0}, 1.0f, tint);
+                    qscene::SceneLoader::ApplySceneMaterial(*primitiveModel, *entity.material);
+                primitiveModel->transform = transform;
+                DrawModel(*primitiveModel, Vec3{0, 0, 0}, 1.0f, tint);
         } else {
             std::string path = qscene::SceneLoader::RemapAssetPath(entity.mesh->asset_name);
             if (!gs_Resources.Has<Model>(path)) continue;
@@ -240,6 +314,9 @@ void GameScene::Draw() {
 
 void GameScene::Shutdown() {
     if (m_PrimitiveModel.meshCount != 0) UnloadModel(m_PrimitiveModel);
+    for (auto& [entityIndex, model] : m_vEditablePrimitiveModels)
+        if (model.meshCount != 0) UnloadModel(model);
+    m_vEditablePrimitiveModels.clear();
     if (m_HandModel.meshCount != 0) UnloadModel(m_HandModel);
     if (m_ImpactModel.meshCount != 0) UnloadModel(m_ImpactModel);
     m_Lightning.Shutdown();

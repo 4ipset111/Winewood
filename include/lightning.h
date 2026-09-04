@@ -3,12 +3,15 @@
 
 #include "scene_loader.h"
 
+#include <unordered_map>
+
 namespace game {
 
 class Lightning {
 public:
     void Initialize(const qscene::Scene& scene);
-    void RenderShadowPass(const qscene::Scene& scene, qc::Model& primitiveModel, qc::Shader& shadowShader);
+    void RenderShadowPass(const qscene::Scene& scene, qc::Model& primitiveModel,
+        std::unordered_map<int, qc::Model>& editableModels, qc::Shader& shadowShader);
     void ApplyLighting(qc::Shader& shader, const qc::Camera3D& camera) const;
     void DrawDebugLights(const qscene::Scene& scene) const;
     void PrepareModel(qc::Model& model, qc::Shader& shader) const;

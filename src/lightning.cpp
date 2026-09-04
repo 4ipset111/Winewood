@@ -10,14 +10,15 @@ void Lightning::Initialize(const qscene::Scene& scene) {
     m_LightCount = 0;
     m_aLights = {};
 
-    for (const auto& entity : scene.entities) {
+    for (int entityIndex = 0; entityIndex < static_cast<int>(scene.entities.size()); ++entityIndex) {
+        const auto& entity = scene.entities[entityIndex];
         if (!entity.light || !entity.light->enabled || m_LightCount >= qscene::MAX_SCENE_LIGHTS) continue;
 
         const auto& source = *entity.light;
         auto& destination = m_aLights[m_LightCount++];
         destination.enabled = true;
         destination.type = static_cast<int>(source.light_type);
-        destination.position = entity.transform.position;
+        destination.position = source.light_position;
         destination.target = source.light_target;
         destination.color = qscene::SceneLoader::ParseLightColor(source.light_color_hex);
         destination.intensity = source.light_intensity;
@@ -36,7 +37,8 @@ void Lightning::Initialize(const qscene::Scene& scene) {
     }
 }
 
-void Lightning::RenderShadowPass(const qscene::Scene& scene, Model& primitiveModel, Shader& shadowShader) {
+void Lightning::RenderShadowPass(const qscene::Scene& scene, Model& primitiveModel,
+    std::unordered_map<int, Model>& editableModels, Shader& shadowShader) {
     for (int i = 0; i < m_LightCount; ++i) {
         BeginTextureMode(m_aShadowMaps[i]);
         ClearBackground(WHITE);
@@ -45,18 +47,22 @@ void Lightning::RenderShadowPass(const qscene::Scene& scene, Model& primitiveMod
         m_aLightViews[i] = qscene::SceneLoader::CopyMatrix(GetMatrixModelview());
         m_aLightProjections[i] = qscene::SceneLoader::CopyMatrix(GetMatrixProjection());
 
-        for (const auto& entity : scene.entities) {
+        for (int entityIndex = 0; entityIndex < static_cast<int>(scene.entities.size()); ++entityIndex) {
+            const auto& entity = scene.entities[entityIndex];
             if (!entity.mesh || !entity.mesh->enabled) continue;
 
             if (entity.mesh->is_primitive) {
-                primitiveModel.transform = qscene::SceneLoader::BuildTransformMatrix(entity.transform);
-                qscene::SceneLoader::SetModelShader(primitiveModel, &shadowShader);
-                DrawModel(primitiveModel, Vec3{0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
+                Model* modelToDraw = &primitiveModel;
+                auto editableModel = editableModels.find(entityIndex);
+                if (editableModel != editableModels.end()) modelToDraw = &editableModel->second;
+                modelToDraw->transform = qscene::SceneLoader::BuildWorldTransformMatrix(scene, entityIndex);
+                qscene::SceneLoader::SetModelShader(*modelToDraw, &shadowShader);
+                DrawModel(*modelToDraw, Vec3{0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
             } else {
                 std::string path = qscene::SceneLoader::RemapAssetPath(entity.mesh->asset_name);
                 if (gs_Resources.Has<Model>(path)) {
                     Model& model = gs_Resources.Get<Model>(path);
-                    model.transform = qscene::SceneLoader::BuildTransformMatrix(entity.transform);
+                    model.transform = qscene::SceneLoader::BuildWorldTransformMatrix(scene, entityIndex);
                     qscene::SceneLoader::SetModelShader(model, &shadowShader);
                     DrawModel(model, Vec3{0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
                 }

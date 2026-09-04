@@ -6,6 +6,7 @@
 #include "weapon.h"
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace game {
@@ -30,6 +31,7 @@ private:
     qc::Model m_PrimitiveModel{};
     qc::Model m_HandModel{};
     qc::Model m_ImpactModel{};
+    std::unordered_map<int, qc::Model> m_vEditablePrimitiveModels;
     qc::Texture2D m_BulletImpactTexture{};
     std::vector<ImpactMark> m_vImpactMarks;
     std::vector<std::string> m_vModelPaths;
