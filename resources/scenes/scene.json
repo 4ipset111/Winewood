@@ -15,9 +15,9 @@
                             0.0
                         ],
                         "scale": [
-                            5.002678871154785,
+                            17.009109497070313,
                             0.0010000000474974513,
-                            5.401617050170898
+                            11.883557319641113
                         ]
                     },
                     "enabled": true,
@@ -26,10 +26,240 @@
                 {
                     "data": {
                         "asset_name": "Cube",
-                        "editable_triangles": [],
-                        "editable_vertices": [],
-                        "is_editable_mesh": false,
-                        "segments": 16,
+                        "editable_triangles": [
+                            [
+                                0,
+                                1,
+                                2
+                            ],
+                            [
+                                0,
+                                2,
+                                3
+                            ],
+                            [
+                                4,
+                                5,
+                                6
+                            ],
+                            [
+                                4,
+                                6,
+                                7
+                            ],
+                            [
+                                8,
+                                9,
+                                10
+                            ],
+                            [
+                                8,
+                                10,
+                                11
+                            ],
+                            [
+                                12,
+                                13,
+                                14
+                            ],
+                            [
+                                12,
+                                14,
+                                15
+                            ],
+                            [
+                                16,
+                                17,
+                                18
+                            ],
+                            [
+                                16,
+                                18,
+                                19
+                            ],
+                            [
+                                20,
+                                21,
+                                22
+                            ],
+                            [
+                                20,
+                                22,
+                                23
+                            ]
+                        ],
+                        "editable_vertices": [
+                            [
+                                -0.5,
+                                -0.5,
+                                0.5,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.5,
+                                -0.5,
+                                0.5,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.5,
+                                0.5,
+                                0.5,
+                                1.0,
+                                1.0
+                            ],
+                            [
+                                -0.5,
+                                0.5,
+                                0.5,
+                                0.0,
+                                1.0
+                            ],
+                            [
+                                -0.4999999403953552,
+                                -1000.4998779296875,
+                                -1.0553892850875854,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                -0.5,
+                                0.5,
+                                -0.5,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.5,
+                                0.5,
+                                -0.5,
+                                1.0,
+                                1.0
+                            ],
+                            [
+                                0.4999999403953552,
+                                -1000.4998779296875,
+                                -1.0553892850875854,
+                                0.0,
+                                1.0
+                            ],
+                            [
+                                -0.5,
+                                0.5,
+                                -0.5,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                -0.5,
+                                0.5,
+                                0.5,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.5,
+                                0.5,
+                                0.5,
+                                1.0,
+                                1.0
+                            ],
+                            [
+                                0.5,
+                                0.5,
+                                -0.5,
+                                0.0,
+                                1.0
+                            ],
+                            [
+                                -0.5,
+                                -0.5,
+                                -0.5,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.5,
+                                -0.5,
+                                -0.5,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.5,
+                                -0.5,
+                                0.5,
+                                1.0,
+                                1.0
+                            ],
+                            [
+                                -0.5,
+                                -0.5,
+                                0.5,
+                                0.0,
+                                1.0
+                            ],
+                            [
+                                0.5,
+                                -0.5,
+                                -0.5,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.5,
+                                0.5,
+                                -0.5,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.5,
+                                0.5,
+                                0.5,
+                                1.0,
+                                1.0
+                            ],
+                            [
+                                0.5,
+                                -0.5,
+                                0.5,
+                                0.0,
+                                1.0
+                            ],
+                            [
+                                -0.5,
+                                -0.5,
+                                -0.5,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                -0.5,
+                                -0.5,
+                                0.5,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                -0.5,
+                                0.5,
+                                0.5,
+                                1.0,
+                                1.0
+                            ],
+                            [
+                                -0.5,
+                                0.5,
+                                -0.5,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "is_editable_mesh": true,
+                        "segments": 3,
                         "type": 0
                     },
                     "enabled": true,
@@ -37,6 +267,7 @@
                 },
                 {
                     "data": {
+                        "albedo_texture_name": "grass.jpg",
                         "auto_uv": false,
                         "color": [
                             255,
@@ -59,7 +290,7 @@
                         "repeat_v": 1.0,
                         "roughness_texture_name": "",
                         "texture_name": "",
-                        "texture_source": 0,
+                        "texture_source": 1,
                         "texture_stretch": true,
                         "uv_scale": [
                             1.0,
@@ -111,6 +342,413 @@
                 },
                 {
                     "data": {
+                        "albedo_texture_name": "",
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 0,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                },
+                {
+                    "data": {
+                        "light_color": "FFFFFFFF",
+                        "light_enabled": false,
+                        "light_intensity": 1.0,
+                        "light_position": [
+                            0.0,
+                            1.7778301239013672,
+                            0.2902566194534302
+                        ],
+                        "light_range": 5.0,
+                        "light_rotation": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "light_spot_angle": 30.0,
+                        "light_target": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "light_type": 1
+                    },
+                    "enabled": false,
+                    "type": "Light"
+                }
+            ],
+            "is_group": false,
+            "name": "Light",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            8.933835983276367,
+                            0.0,
+                            -1.7173271179199219
+                        ],
+                        "rotation": [
+                            -89.9998779296875,
+                            -0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            0.9999995827674866,
+                            0.9999995827674866
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "house/scene.gltf",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 0
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "albedo_texture_name": "",
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            "",
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 2,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                }
+            ],
+            "is_group": false,
+            "name": "scene",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            2.091843366622925,
+                            0.0,
+                            3.712562084197998
+                        ],
+                        "rotation": [
+                            0.0,
+                            30.019670486450195,
+                            0.0
+                        ],
+                        "scale": [
+                            1.3385844230651855,
+                            1.0,
+                            0.9999998807907104
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "barriers/Jersey_barrier.glb",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 0
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "albedo_texture_name": "",
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            "",
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 2,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                }
+            ],
+            "is_group": false,
+            "name": "Jersey_barrier",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            -0.9450473189353943,
+                            0.0,
+                            4.712562561035156
+                        ],
+                        "rotation": [
+                            0.0,
+                            -0.008218430913984776,
+                            0.0
+                        ],
+                        "scale": [
+                            0.9999997019767761,
+                            1.0,
+                            0.9999997019767761
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "barriers/Jersey_barrier.glb",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 0
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "albedo_texture_name": "",
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            "",
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 2,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                }
+            ],
+            "is_group": false,
+            "name": "Barrier",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            -4.2837982177734375,
+                            0.0,
+                            -0.7170133590698242
+                        ],
+                        "rotation": [
+                            -89.9998779296875,
+                            -0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            0.6000000238418579,
+                            0.5999996066093445,
+                            0.23999984562397003
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "lamp/low_poly_psx_street_lamp.glb",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 0
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "albedo_texture_name": "",
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            "",
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 2,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                }
+            ],
+            "is_group": false,
+            "name": "lamp",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            -3.0,
+                            3.730424642562866,
+                            -1.0
+                        ],
+                        "rotation": [
+                            1.2293838835830684e-06,
+                            -0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            0.0010000000474974513,
+                            0.0010000000474974513,
+                            0.0010000000474974513
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "Sphere",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 1
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "albedo_texture_name": "",
                         "auto_uv": false,
                         "color": [
                             255,
@@ -147,11 +785,11 @@
                     "data": {
                         "light_color": "FFFFFFFF",
                         "light_enabled": true,
-                        "light_intensity": 1.0,
+                        "light_intensity": 4.300000190734863,
                         "light_position": [
-                            0.0,
-                            1.7778301239013672,
-                            0.2902566194534302
+                            -3.0,
+                            3.730424642562866,
+                            -1.0
                         ],
                         "light_range": 5.0,
                         "light_rotation": [
@@ -161,7 +799,7 @@
                         ],
                         "light_spot_angle": 30.0,
                         "light_target": [
-                            0.0,
+                            0.30000001192092896,
                             0.0,
                             0.0
                         ],
@@ -172,7 +810,7 @@
                 }
             ],
             "is_group": false,
-            "name": "Light",
+            "name": "lamp_light",
             "parent_id": -1
         },
         {
@@ -180,19 +818,19 @@
                 {
                     "data": {
                         "position": [
+                            2.7162017822265625,
                             0.0,
-                            0.5,
-                            -0.5
+                            -2.217013359069824
                         ],
                         "rotation": [
-                            0.0,
-                            -0.0,
-                            0.0
+                            -89.9998779296875,
+                            -0.00010427384404465556,
+                            179.99989318847656
                         ],
                         "scale": [
-                            1.0,
-                            1.0,
-                            1.0
+                            0.6000000238418579,
+                            0.5999996066093445,
+                            0.23999984562397003
                         ]
                     },
                     "enabled": true,
@@ -200,7 +838,7 @@
                 },
                 {
                     "data": {
-                        "asset_name": "Cube",
+                        "asset_name": "lamp/low_poly_psx_street_lamp.glb",
                         "editable_triangles": [],
                         "editable_vertices": [],
                         "is_editable_mesh": false,
@@ -212,6 +850,83 @@
                 },
                 {
                     "data": {
+                        "albedo_texture_name": "",
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            "",
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 2,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                }
+            ],
+            "is_group": false,
+            "name": "lamp(2)",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            0.5,
+                            3.730424642562866,
+                            -2.5
+                        ],
+                        "rotation": [
+                            1.2293838835830684e-06,
+                            -0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            0.0010000000474974513,
+                            0.0010000000474974513,
+                            0.0010000000474974513
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "Sphere",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 1
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "albedo_texture_name": "",
                         "auto_uv": false,
                         "color": [
                             255,
@@ -235,6 +950,185 @@
                         "roughness_texture_name": "",
                         "texture_name": "",
                         "texture_source": 0,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                },
+                {
+                    "data": {
+                        "light_color": "FFFFFFFF",
+                        "light_enabled": true,
+                        "light_intensity": 4.300000190734863,
+                        "light_position": [
+                            0.5,
+                            3.730424642562866,
+                            -2.5
+                        ],
+                        "light_range": 5.0,
+                        "light_rotation": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "light_spot_angle": 30.0,
+                        "light_target": [
+                            -1.899999976158142,
+                            0.0,
+                            0.0
+                        ],
+                        "light_type": 1
+                    },
+                    "enabled": true,
+                    "type": "Light"
+                }
+            ],
+            "is_group": false,
+            "name": "Light (1)",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            -8.647130966186523,
+                            2.0,
+                            -0.47809410095214844
+                        ],
+                        "rotation": [
+                            -89.99981689453125,
+                            -0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            2.799999952316284,
+                            4.399995803833008,
+                            1.9499980211257935
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "house/casa_abandonada.glb",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 0
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "albedo_texture_name": "",
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            "",
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 2,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                }
+            ],
+            "is_group": false,
+            "name": "house",
+            "parent_id": -1
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            -4.059531211853027,
+                            0.0,
+                            4.212562561035156
+                        ],
+                        "rotation": [
+                            0.0,
+                            -23.4396915435791,
+                            0.0
+                        ],
+                        "scale": [
+                            0.9999954700469971,
+                            1.0,
+                            0.9999954700469971
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "barriers/Jersey_barrier.glb",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 0
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "albedo_texture_name": "",
+                        "auto_uv": false,
+                        "color": [
+                            255,
+                            255,
+                            255,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            "",
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "",
+                        "texture_source": 2,
                         "texture_stretch": true,
                         "uv_scale": [
                             1.0,

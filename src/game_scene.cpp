@@ -22,7 +22,7 @@ bool GameScene::Initialize() {
         return false;
     }
 
-    m_HandModel = LoadModel("resources/models/hand/RiggedLowpolyHand.obj");
+    m_HandModel = LoadModel("resources/models/hand/hand.obj");
     if (!IsModelValid(m_HandModel)) {
         TraceLog(LogLevel::Error, "SCENE", "Could not load first-person hand model");
         return false;

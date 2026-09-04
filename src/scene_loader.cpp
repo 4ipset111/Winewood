@@ -104,7 +104,13 @@ Scene SceneLoader::LoadFromFile(const std::string& path) const {
 }
 
 Scene SceneLoader::ParseFile(const std::string& path) {
-    std::ifstream file(path);
+    std::string resolvedPath = RemapAssetPath(path);
+    std::ifstream file;
+    file.open(resolvedPath);
+    if (!file.is_open() && resolvedPath != path) {
+        file.clear();
+        file.open(path);
+    }
     if (!file.is_open()) throw std::runtime_error("QuarkSceneLoader: could not open file: " + path);
     Json json;
     file >> json;
@@ -128,9 +134,25 @@ std::string SceneLoader::RemapAssetPath(const std::string& original) {
     std::string normalized = original;
     for (char& character : normalized) if (character == '\\') character = '/';
     const auto resourcesPosition = normalized.find("resources");
-    if (resourcesPosition != std::string::npos) return normalized.substr(resourcesPosition);
-    if (normalized.rfind("resources/", 0) == 0) return normalized;
-    return "resources/" + normalized;
+    if (resourcesPosition != std::string::npos)
+        normalized = normalized.substr(resourcesPosition);
+
+    if (normalized.rfind("resources/", 0) == 0) {
+        if (FileExists(normalized.c_str())) return normalized;
+
+        std::string withoutResources = normalized.substr(std::string("resources/").size());
+        if (FileExists(withoutResources.c_str())) return withoutResources;
+        std::string sceneAssetPath = "resources/scenes/" + withoutResources;
+        if (FileExists(sceneAssetPath.c_str())) return sceneAssetPath;
+        return normalized;
+    }
+
+    std::string withResources = "resources/" + normalized;
+    if (FileExists(withResources.c_str())) return withResources;
+    if (FileExists(normalized.c_str())) return normalized;
+    std::string sceneAssetPath = "resources/scenes/" + normalized;
+    if (FileExists(sceneAssetPath.c_str())) return sceneAssetPath;
+    return withResources;
 }
 
 Vec4 SceneLoader::ParseLightColor(const std::string& hex) {

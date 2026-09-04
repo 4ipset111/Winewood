@@ -1,0 +1,17 @@
+quark_texture_meta: 1
+asset_id: a22419de0d6d394b373fc532d4090c20
+image:
+  color_space: srgb
+  alpha_mode: transparency
+  readable: false
+sampling:
+  mipmaps: false
+  filter: nearest
+  wrap_u: clamp
+  wrap_v: clamp
+limits:
+  max_size: 2048
+  compression: 50
+sprite:
+  mode: 1
+  type: 8
