@@ -25,6 +25,7 @@ set(SOURCE_FILES
 	src/player.cpp
 	src/weapon.cpp
 	src/resources.cpp
+	src/inventory.cpp
 )
 
 include_directories(include)

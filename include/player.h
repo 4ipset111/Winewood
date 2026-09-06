@@ -22,7 +22,8 @@ public:
 
     explicit Player(Vec3 startPosition = Vec3{ 0.0f, 0.0f, 0.0f });
 
-    void Update();
+    void Update(bool inputEnabled = true);
+    void ResetMouseDelta() { m_IgnoreNextMouseDelta = true; }
     void ApplyRecoil(float pitch);
 
     const Camera3D& GetCamera() const { return m_Camera; }
@@ -52,6 +53,7 @@ private:
     Vec2 m_LookRotation{ 0.0f, 0.0f };
     Vec2 m_Sensitivity{ 0.001f, 0.001f };
     Vec2 m_Lean{ 0.0f, 0.0f };
+    bool m_IgnoreNextMouseDelta = false;
 
     float m_HeadTimer = 0.0f;
     float m_WalkLerp = 0.0f;

@@ -37,15 +37,23 @@ Player::Player(Vec3 startPosition) : m_Position(startPosition) {
     UpdateCameraFPS();
 }
 
-void Player::Update() {
-    Vec2 mouseDelta = GetMouseDelta();
-    m_LookRotation.x -= mouseDelta.x * m_Sensitivity.x;
-    m_LookRotation.y += mouseDelta.y * m_Sensitivity.y;
+void Player::Update(bool inputEnabled) {
+    Vec2 mouseDelta{ 0.0f, 0.0f };
+    if (inputEnabled) {
+        if (m_IgnoreNextMouseDelta) {
+            GetMouseDelta();
+            m_IgnoreNextMouseDelta = false;
+        } else {
+            mouseDelta = GetMouseDelta();
+        }
+        m_LookRotation.x -= mouseDelta.x * m_Sensitivity.x;
+        m_LookRotation.y += mouseDelta.y * m_Sensitivity.y;
+    }
 
-    float sideway = (float)IsKeyDown(KeyboardKey::D) - (float)IsKeyDown(KeyboardKey::A);
-    float forward = (float)IsKeyDown(KeyboardKey::W) - (float)IsKeyDown(KeyboardKey::S);
-    bool crouching = IsKeyDown(KeyboardKey::LeftControl);
-    bool jumpPressed = IsKeyPressed(KeyboardKey::Space);
+    float sideway = inputEnabled ? ((float)IsKeyDown(KeyboardKey::D) - (float)IsKeyDown(KeyboardKey::A)) : 0.0f;
+    float forward = inputEnabled ? ((float)IsKeyDown(KeyboardKey::W) - (float)IsKeyDown(KeyboardKey::S)) : 0.0f;
+    bool crouching = inputEnabled ? IsKeyDown(KeyboardKey::LeftControl) : false;
+    bool jumpPressed = inputEnabled ? IsKeyPressed(KeyboardKey::Space) : false;
 
     UpdateBody(m_LookRotation.x, sideway, forward, jumpPressed, crouching);
 

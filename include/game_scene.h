@@ -4,6 +4,7 @@
 #include "lightning.h"
 #include "player.h"
 #include "weapon.h"
+#include "inventory.h"
 
 #include <string>
 #include <unordered_map>
@@ -38,6 +39,7 @@ private:
     Player m_Player{{0.0f, 0.0f, 0.0f}};
     IWeapon* m_pWeapon = nullptr;
     Lightning m_Lightning;
+    Inventory m_Inventory;
 };
 
 } // namespace game

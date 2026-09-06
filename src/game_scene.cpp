@@ -221,56 +221,86 @@ bool GameScene::Initialize() {
     m_Lightning.PrepareModel(m_ImpactModel, m_LightingShader);
     for (const auto& path : m_vModelPaths)
         m_Lightning.PrepareModel(gs_Resources.Get<Model>(path), m_LightingShader);
+        
+    m_Inventory.Initialize();
+
     return true;
 }
 
 void GameScene::Update() {
-    m_Player.Update();
+    if (IsKeyPressed(KeyboardKey::Tab)) {
+        m_Inventory.Toggle();
+        if (m_Inventory.IsOpen()) {
+            SDL_SetWindowRelativeMouseMode(GetNativeWindow(), false);
+            EnableCursor();
+            ShowCursor();
+        } else {
+            SDL_SetWindowRelativeMouseMode(GetNativeWindow(), true);
+            DisableCursor();
+            HideCursor();
+            m_Player.ResetMouseDelta();
+        }
+    }
+
+    if (m_Inventory.IsOpen() && IsKeyPressed(KeyboardKey::Escape)) {
+        m_Inventory.Close();
+        SDL_SetWindowRelativeMouseMode(GetNativeWindow(), true);
+        DisableCursor();
+        HideCursor();
+        m_Player.ResetMouseDelta();
+    }
+
+    const bool playerInputActive = !m_Inventory.IsOpen();
+    m_Player.Update(playerInputActive);
 
     for (auto& impact : m_vImpactMarks)
         impact.lifetime -= GetFrameTime();
     m_vImpactMarks.erase(std::remove_if(m_vImpactMarks.begin(), m_vImpactMarks.end(),
         [](const ImpactMark& impact) { return impact.lifetime <= 0.0f; }), m_vImpactMarks.end());
 
-    const std::optional<WeaponShot> shot =
-        m_pWeapon->Update(m_Player.GetCamera(), GetFrameTime());
-    if (shot) {
-        m_Player.ApplyRecoil(shot->recoilPitch);
+    if (playerInputActive) {
+        const std::optional<WeaponShot> shot =
+            m_pWeapon->Update(m_Player.GetCamera(), GetFrameTime());
+        if (shot) {
+            m_Player.ApplyRecoil(shot->recoilPitch);
 
-        const Ray& ray = shot->ray;
-        RayCollision nearest{};
-        nearest.distance = std::numeric_limits<float>::max();
-        auto testModel = [&](const Model& model, const Matrix& transform) {
-            for (int meshIndex = 0; meshIndex < model.meshCount; ++meshIndex) {
-                RayCollision collision = GetRayCollisionMesh(ray, model.meshes[meshIndex], transform);
-                if (collision.hit && collision.distance < nearest.distance)
-                    nearest = collision;
+            const Ray& ray = shot->ray;
+            RayCollision nearest{};
+            nearest.distance = std::numeric_limits<float>::max();
+            auto testModel = [&](const Model& model, const Matrix& transform) {
+                for (int meshIndex = 0; meshIndex < model.meshCount; ++meshIndex) {
+                    RayCollision collision = GetRayCollisionMesh(ray, model.meshes[meshIndex], transform);
+                    if (collision.hit && collision.distance < nearest.distance)
+                        nearest = collision;
+                }
+            };
+
+            for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
+                const auto& entity = m_pScene->entities[entityIndex];
+                if (!entity.mesh || !entity.mesh->enabled) continue;
+                Matrix transform = qscene::SceneLoader::BuildWorldTransformMatrix(*m_pScene, entityIndex);
+                if (entity.mesh->is_primitive) {
+                    const Model* modelToTest = &m_PrimitiveModel;
+                    auto editableModel = m_vEditablePrimitiveModels.find(entityIndex);
+                    if (editableModel != m_vEditablePrimitiveModels.end()) modelToTest = &editableModel->second;
+                    testModel(*modelToTest, transform);
+                } else {
+                    const std::string path = qscene::SceneLoader::RemapAssetPath(entity.mesh->asset_name);
+                    if (gs_Resources.Has<Model>(path))
+                        testModel(gs_Resources.Get<Model>(path), transform);
+                }
             }
-        };
 
-        for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
-            const auto& entity = m_pScene->entities[entityIndex];
-            if (!entity.mesh || !entity.mesh->enabled) continue;
-            Matrix transform = qscene::SceneLoader::BuildWorldTransformMatrix(*m_pScene, entityIndex);
-            if (entity.mesh->is_primitive) {
-                const Model* modelToTest = &m_PrimitiveModel;
-                auto editableModel = m_vEditablePrimitiveModels.find(entityIndex);
-                if (editableModel != m_vEditablePrimitiveModels.end()) modelToTest = &editableModel->second;
-                testModel(*modelToTest, transform);
-            } else {
-                const std::string path = qscene::SceneLoader::RemapAssetPath(entity.mesh->asset_name);
-                if (gs_Resources.Has<Model>(path))
-                    testModel(gs_Resources.Get<Model>(path), transform);
+            if (nearest.hit) {
+                m_vImpactMarks.push_back(ImpactMark{
+                    nearest.point + nearest.normal * 0.002f,
+                    nearest.normal,
+                    4.0f});
             }
-        }
-
-        if (nearest.hit) {
-            m_vImpactMarks.push_back(ImpactMark{
-                nearest.point + nearest.normal * 0.002f,
-                nearest.normal,
-                4.0f});
         }
     }
+
+    m_Inventory.Update(GetFrameTime());
 }
 
 void GameScene::Draw() {
@@ -375,10 +405,16 @@ void GameScene::Draw() {
     DrawDebugText(TextFormat("%d", GetFPS()), 0, 0, 24, Color{255, 255, 255, 255});
     DrawDebugText(TextFormat("Position: (%.2f, %.2f, %.2f)", m_Player.GetPosition().x,
         m_Player.GetPosition().y, m_Player.GetPosition().z), 0, 30, 24, Color{255, 255, 255, 255});
+
+    if (m_Inventory.IsVisible()) {
+        m_Inventory.Draw();
+    }
+
     EndDrawing();
 }
 
 void GameScene::Shutdown() {
+    m_Inventory.Shutdown();
     if (m_PrimitiveModel.meshCount != 0) UnloadModel(m_PrimitiveModel);
     for (auto& [entityIndex, model] : m_vEditablePrimitiveModels)
         if (model.meshCount != 0) UnloadModel(model);

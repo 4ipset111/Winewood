@@ -4,6 +4,7 @@ using namespace qc;
 
 int main() {
     InitWindow(1280, 720, "Winewood", RendererType::OpenGL);
+    SetExitKey(KeyboardKey::Unknown);
     SetTargetFPS(GetMonitorRefreshRate(GetCurrentMonitor()));
     SDL_SetWindowRelativeMouseMode(GetNativeWindow(), true);
     DisableCursor();

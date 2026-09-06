@@ -1,0 +1,11 @@
+newmtl janta3
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd RGB_Alpha.png
+map_Bump nrmOGL.png
+Ks 0.2 0.2 0.2
+Ns 0
+map_Ns ruf.png
+
