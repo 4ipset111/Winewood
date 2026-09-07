@@ -40,6 +40,10 @@ private:
     IWeapon* m_pWeapon = nullptr;
     Lightning m_Lightning;
     Inventory m_Inventory;
+
+    bool m_bPlayerIdle = false;
+    float m_HandIdleTimer = 0.0f;
+    float m_HandIdleBlend = 0.0f;
 };
 
 } // namespace game

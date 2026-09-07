@@ -12,6 +12,14 @@ using namespace qc;
 namespace game {
 namespace {
 
+Vec3 RotateAroundAxis(const Vec3& vector, const Vec3& axis, float angle) {
+    const Vec3 normalized = axis.normalized();
+    const float c = cosf(angle);
+    const float s = sinf(angle);
+    return vector * c + normalized.cross(vector) * s
+        + normalized * (normalized.dot(vector) * (1.0f - c));
+}
+
 Model BuildEditableModel(const qscene::MeshComponent& source) {
     Mesh mesh{};
     mesh.vertexCount = static_cast<int>(source.editable_vertices.size());
@@ -94,7 +102,7 @@ bool GameScene::Initialize() {
         m_ImpactModel.materials[0].maps[MATERIAL_MAP_ALBEDO].color = WHITE;
     }
 
-    m_pWeapon = new TokarevWeapon();
+    m_pWeapon = new RevolverWeapon();
     if (!m_pWeapon->Initialize())
         return false;
 
@@ -253,6 +261,20 @@ void GameScene::Update() {
     const bool playerInputActive = !m_Inventory.IsOpen();
     m_Player.Update(playerInputActive);
 
+    const Vec3 playerVelocity = m_Player.GetVelocity();
+    const float horizontalSpeed = std::sqrt(playerVelocity.x * playerVelocity.x
+        + playerVelocity.z * playerVelocity.z);
+    const bool isIdle = playerInputActive
+        && horizontalSpeed < 0.5f
+        && !IsMouseButtonDown(MouseButton::Left);
+    m_bPlayerIdle = isIdle;
+    m_HandIdleTimer += GetFrameTime();
+    if (isIdle) {
+        m_HandIdleBlend = std::min(1.0f, m_HandIdleBlend + GetFrameTime() * 3.0f);
+    } else {
+        m_HandIdleBlend = std::max(0.0f, m_HandIdleBlend - GetFrameTime() * 6.0f);
+    }
+
     for (auto& impact : m_vImpactMarks)
         impact.lifetime -= GetFrameTime();
     m_vImpactMarks.erase(std::remove_if(m_vImpactMarks.begin(), m_vImpactMarks.end(),
@@ -379,19 +401,36 @@ void GameScene::Draw() {
     const Vec3 cameraForward = (camera.target - camera.position).normalized();
     const Vec3 cameraRight = cameraForward.cross(camera.up).normalized();
     const Vec3 cameraUp = cameraRight.cross(cameraForward).normalized();
+
+    const float idlePhase = std::sin(m_HandIdleTimer * 1.8f);
+    const float idlePhase2 = std::cos(m_HandIdleTimer * 1.3f);
+    const float swayAmount = m_HandIdleBlend * 0.03f;
+
     const Vec3 handPosition = camera.position + cameraRight * 0.60f
-        + cameraUp * -0.70f + cameraForward * 0.65f;
+        + cameraUp * -0.70f + cameraForward * 0.65f
+        + cameraUp * (idlePhase * swayAmount * 0.6f)
+        + cameraRight * (idlePhase2 * swayAmount * 0.4f)
+        + cameraForward * (idlePhase2 * swayAmount * 0.5f);
     constexpr float handScale = 0.14f;
+
+    const float idleRoll = idlePhase2 * swayAmount * 0.5f;
+    const float idlePitch = idlePhase * swayAmount * 0.4f;
+    const Vec3 rollAxis = cameraForward;
+    const Vec3 rightAxis = RotateAroundAxis(-cameraRight, rollAxis, idleRoll);
+    const Vec3 upAxis = RotateAroundAxis(
+        RotateAroundAxis(cameraUp, rollAxis, idleRoll), rightAxis, idlePitch);
+    const Vec3 forwardAxis = RotateAroundAxis(cameraForward, rightAxis, idlePitch);
+
     m_HandModel.transform = Matrix::identity();
-    m_HandModel.transform.m[0] = -cameraRight.x * handScale;
-    m_HandModel.transform.m[1] = -cameraRight.y * handScale;
-    m_HandModel.transform.m[2] = -cameraRight.z * handScale;
-    m_HandModel.transform.m[4] = cameraUp.x * handScale;
-    m_HandModel.transform.m[5] = cameraUp.y * handScale;
-    m_HandModel.transform.m[6] = cameraUp.z * handScale;
-    m_HandModel.transform.m[8] = cameraForward.x * handScale;
-    m_HandModel.transform.m[9] = cameraForward.y * handScale;
-    m_HandModel.transform.m[10] = cameraForward.z * handScale;
+    m_HandModel.transform.m[0] = rightAxis.x * handScale;
+    m_HandModel.transform.m[1] = rightAxis.y * handScale;
+    m_HandModel.transform.m[2] = rightAxis.z * handScale;
+    m_HandModel.transform.m[4] = upAxis.x * handScale;
+    m_HandModel.transform.m[5] = upAxis.y * handScale;
+    m_HandModel.transform.m[6] = upAxis.z * handScale;
+    m_HandModel.transform.m[8] = forwardAxis.x * handScale;
+    m_HandModel.transform.m[9] = forwardAxis.y * handScale;
+    m_HandModel.transform.m[10] = forwardAxis.z * handScale;
     m_HandModel.transform.m[12] = handPosition.x;
     m_HandModel.transform.m[13] = handPosition.y;
     m_HandModel.transform.m[14] = handPosition.z;

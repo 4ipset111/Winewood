@@ -6,10 +6,10 @@
 
 using namespace qc;
 
-bool TokarevWeapon::Initialize()
+bool RevolverWeapon::Initialize()
 {
     for (int soundIndex = 0; soundIndex < static_cast<int>(m_aShootSounds.size()); ++soundIndex) {
-        const std::string name = TextFormat("tokarev_shoot_%d", soundIndex + 1);
+        const std::string name = TextFormat("Tokarev_shoot_%d", soundIndex + 1);
         const std::string path = TextFormat(
             "resources/sounds/Tokarev_Shoot_%d.wav", soundIndex + 1);
         gs_Resources.Load<Sound>(name, path);
@@ -19,7 +19,7 @@ bool TokarevWeapon::Initialize()
     return true;
 }
 
-std::optional<WeaponShot> TokarevWeapon::Update(const Camera3D& camera, float delta)
+std::optional<WeaponShot> RevolverWeapon::Update(const Camera3D& camera, float delta)
 {
     UpdateSoundPlayback(delta);
 
@@ -40,7 +40,7 @@ std::optional<WeaponShot> TokarevWeapon::Update(const Camera3D& camera, float de
         5.0f * DEG2RAD};
 }
 
-void TokarevWeapon::UpdateSoundPlayback(float delta)
+void RevolverWeapon::UpdateSoundPlayback(float delta)
 {
     if (m_CurrentShootSound.stream.buffer) {
         m_CurrentShootElapsed += delta;
@@ -61,7 +61,7 @@ void TokarevWeapon::UpdateSoundPlayback(float delta)
     }
 }
 
-void TokarevWeapon::PlayShotSound()
+void RevolverWeapon::PlayShotSound()
 {
     if (m_FadingShootSound.stream.buffer)
         StopSound(m_FadingShootSound);
@@ -81,7 +81,7 @@ void TokarevWeapon::PlayShotSound()
     PlaySound(m_CurrentShootSound);
 }
 
-void TokarevWeapon::Shutdown()
+void RevolverWeapon::Shutdown()
 {
     if (m_CurrentShootSound.stream.buffer)
         StopSound(m_CurrentShootSound);

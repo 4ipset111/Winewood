@@ -20,7 +20,7 @@ public:
     virtual void Shutdown() = 0;
 };
 
-class TokarevWeapon final : public IWeapon {
+class RevolverWeapon final : public IWeapon {
 public:
     bool Initialize() override;
     std::optional<WeaponShot> Update(const qc::Camera3D& camera, float delta) override;
