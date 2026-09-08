@@ -4,21 +4,11 @@ using namespace qc;
 
 #include "resources.h"
 
-#include <array>
 #include <algorithm>
-#include <cmath>
 #include <limits>
 
 namespace game {
 namespace {
-
-Vec3 RotateAroundAxis(const Vec3& vector, const Vec3& axis, float angle) {
-    const Vec3 normalized = axis.normalized();
-    const float c = cosf(angle);
-    const float s = sinf(angle);
-    return vector * c + normalized.cross(vector) * s
-        + normalized * (normalized.dot(vector) * (1.0f - c));
-}
 
 Model BuildEditableModel(const qscene::MeshComponent& source) {
     Mesh mesh{};
@@ -82,29 +72,6 @@ bool GameScene::Initialize() {
         TraceLog(LogLevel::Error, "SCENE", "Could not load lighting shaders");
         return false;
     }
-
-    m_HandModel = LoadModel("resources/models/hand/hand.obj");
-    if (!IsModelValid(m_HandModel)) {
-        TraceLog(LogLevel::Error, "SCENE", "Could not load first-person hand model");
-        return false;
-    }
-    Texture2D handTexture = qscene::SceneLoader::LoadMaterialTexture(
-        "resources/models/hand/hand.png");
-    if (handTexture.valid && m_HandModel.materialCount > 0 && m_HandModel.materials[0].maps) {
-        m_HandModel.materials[0].maps[MATERIAL_MAP_ALBEDO].color = WHITE;
-        m_HandModel.materials[0].maps[MATERIAL_MAP_ALBEDO].texture = handTexture;
-    }
-    gs_Resources.Load<Texture2D>("bullet_impact", "resources/textures/Bullet_Impact.png");
-    m_BulletImpactTexture = gs_Resources.Get<Texture2D>("bullet_impact");
-    m_ImpactModel = LoadModelFromMesh(GenMeshPlane(1.0f, 1.0f, 1, 1));
-    if (m_ImpactModel.materialCount > 0 && m_ImpactModel.materials[0].maps) {
-        m_ImpactModel.materials[0].maps[MATERIAL_MAP_ALBEDO].texture = m_BulletImpactTexture;
-        m_ImpactModel.materials[0].maps[MATERIAL_MAP_ALBEDO].color = WHITE;
-    }
-
-    m_pWeapon = new RevolverWeapon();
-    if (!m_pWeapon->Initialize())
-        return false;
 
     Mesh cubeMesh = GenMeshCube(1.0f, 1.0f, 1.0f);
     m_PrimitiveModel = LoadModelFromMesh(cubeMesh);
@@ -225,104 +192,14 @@ bool GameScene::Initialize() {
     m_Lightning.PrepareModel(m_PrimitiveModel, m_LightingShader);
     for (auto& [entityIndex, model] : m_vEditablePrimitiveModels)
         m_Lightning.PrepareModel(model, m_LightingShader);
-    m_Lightning.PrepareModel(m_HandModel, m_LightingShader);
-    m_Lightning.PrepareModel(m_ImpactModel, m_LightingShader);
     for (const auto& path : m_vModelPaths)
         m_Lightning.PrepareModel(gs_Resources.Get<Model>(path), m_LightingShader);
-        
-    m_Inventory.Initialize();
 
     return true;
 }
 
 void GameScene::Update() {
-    if (IsKeyPressed(KeyboardKey::Tab)) {
-        m_Inventory.Toggle();
-        if (m_Inventory.IsOpen()) {
-            SDL_SetWindowRelativeMouseMode(GetNativeWindow(), false);
-            EnableCursor();
-            ShowCursor();
-        } else {
-            SDL_SetWindowRelativeMouseMode(GetNativeWindow(), true);
-            DisableCursor();
-            HideCursor();
-            m_Player.ResetMouseDelta();
-        }
-    }
-
-    if (m_Inventory.IsOpen() && IsKeyPressed(KeyboardKey::Escape)) {
-        m_Inventory.Close();
-        SDL_SetWindowRelativeMouseMode(GetNativeWindow(), true);
-        DisableCursor();
-        HideCursor();
-        m_Player.ResetMouseDelta();
-    }
-
-    const bool playerInputActive = !m_Inventory.IsOpen();
-    m_Player.Update(playerInputActive);
-
-    const Vec3 playerVelocity = m_Player.GetVelocity();
-    const float horizontalSpeed = std::sqrt(playerVelocity.x * playerVelocity.x
-        + playerVelocity.z * playerVelocity.z);
-    const bool isIdle = playerInputActive
-        && horizontalSpeed < 0.5f
-        && !IsMouseButtonDown(MouseButton::Left);
-    m_bPlayerIdle = isIdle;
-    m_HandIdleTimer += GetFrameTime();
-    if (isIdle) {
-        m_HandIdleBlend = std::min(1.0f, m_HandIdleBlend + GetFrameTime() * 3.0f);
-    } else {
-        m_HandIdleBlend = std::max(0.0f, m_HandIdleBlend - GetFrameTime() * 6.0f);
-    }
-
-    for (auto& impact : m_vImpactMarks)
-        impact.lifetime -= GetFrameTime();
-    m_vImpactMarks.erase(std::remove_if(m_vImpactMarks.begin(), m_vImpactMarks.end(),
-        [](const ImpactMark& impact) { return impact.lifetime <= 0.0f; }), m_vImpactMarks.end());
-
-    if (playerInputActive) {
-        const std::optional<WeaponShot> shot =
-            m_pWeapon->Update(m_Player.GetCamera(), GetFrameTime());
-        if (shot) {
-            m_Player.ApplyRecoil(shot->recoilPitch);
-
-            const Ray& ray = shot->ray;
-            RayCollision nearest{};
-            nearest.distance = std::numeric_limits<float>::max();
-            auto testModel = [&](const Model& model, const Matrix& transform) {
-                for (int meshIndex = 0; meshIndex < model.meshCount; ++meshIndex) {
-                    RayCollision collision = GetRayCollisionMesh(ray, model.meshes[meshIndex], transform);
-                    if (collision.hit && collision.distance < nearest.distance)
-                        nearest = collision;
-                }
-            };
-
-            for (int entityIndex = 0; entityIndex < static_cast<int>(m_pScene->entities.size()); ++entityIndex) {
-                const auto& entity = m_pScene->entities[entityIndex];
-                if (!entity.mesh || !entity.mesh->enabled) continue;
-                Matrix transform = qscene::SceneLoader::BuildWorldTransformMatrix(*m_pScene, entityIndex);
-                if (entity.mesh->is_primitive) {
-                    const Model* modelToTest = &m_PrimitiveModel;
-                    auto editableModel = m_vEditablePrimitiveModels.find(entityIndex);
-                    if (editableModel != m_vEditablePrimitiveModels.end()) modelToTest = &editableModel->second;
-                    testModel(*modelToTest, transform);
-                } else {
-                    const std::string path = qscene::SceneLoader::RemapAssetPath(entity.mesh->asset_name);
-                    if (gs_Resources.Has<Model>(path))
-                        testModel(gs_Resources.Get<Model>(path), transform);
-                }
-            }
-
-            if (nearest.hit) {
-                m_vImpactMarks.push_back(ImpactMark{
-                    nearest.point + nearest.normal * 0.002f,
-                    nearest.normal,
-                    4.0f});
-            }
-        }
-    }
-
-    m_Inventory.Update(GetFrameTime());
+    m_Player.Update();
 }
 
 void GameScene::Draw() {
@@ -372,70 +249,6 @@ void GameScene::Draw() {
         }
     }
 
-    for (const auto& impact : m_vImpactMarks) {
-        const Vec3 worldUp{0.0f, 1.0f, 0.0f};
-        const Vec3 fallbackAxis{1.0f, 0.0f, 0.0f};
-        Vec3 tangent = impact.normal.cross(worldUp);
-        if (tangent.length() < 0.01f)
-            tangent = impact.normal.cross(fallbackAxis);
-        tangent = tangent.normalized();
-        const Vec3 bitangent = impact.normal.cross(tangent).normalized();
-        constexpr float impactSize = 0.12f;
-
-        m_ImpactModel.transform = Matrix::identity();
-        m_ImpactModel.transform.m[0] = tangent.x * impactSize;
-        m_ImpactModel.transform.m[1] = tangent.y * impactSize;
-        m_ImpactModel.transform.m[2] = tangent.z * impactSize;
-        m_ImpactModel.transform.m[4] = impact.normal.x * impactSize;
-        m_ImpactModel.transform.m[5] = impact.normal.y * impactSize;
-        m_ImpactModel.transform.m[6] = impact.normal.z * impactSize;
-        m_ImpactModel.transform.m[8] = bitangent.x * impactSize;
-        m_ImpactModel.transform.m[9] = bitangent.y * impactSize;
-        m_ImpactModel.transform.m[10] = bitangent.z * impactSize;
-        m_ImpactModel.transform.m[12] = impact.position.x;
-        m_ImpactModel.transform.m[13] = impact.position.y;
-        m_ImpactModel.transform.m[14] = impact.position.z;
-        DrawModel(m_ImpactModel, Vec3{0, 0, 0}, 1.0f, WHITE);
-    }
-
-    const Vec3 cameraForward = (camera.target - camera.position).normalized();
-    const Vec3 cameraRight = cameraForward.cross(camera.up).normalized();
-    const Vec3 cameraUp = cameraRight.cross(cameraForward).normalized();
-
-    const float idlePhase = std::sin(m_HandIdleTimer * 1.8f);
-    const float idlePhase2 = std::cos(m_HandIdleTimer * 1.3f);
-    const float swayAmount = m_HandIdleBlend * 0.03f;
-
-    const Vec3 handPosition = camera.position + cameraRight * 0.60f
-        + cameraUp * -0.70f + cameraForward * 0.65f
-        + cameraUp * (idlePhase * swayAmount * 0.6f)
-        + cameraRight * (idlePhase2 * swayAmount * 0.4f)
-        + cameraForward * (idlePhase2 * swayAmount * 0.5f);
-    constexpr float handScale = 0.14f;
-
-    const float idleRoll = idlePhase2 * swayAmount * 0.5f;
-    const float idlePitch = idlePhase * swayAmount * 0.4f;
-    const Vec3 rollAxis = cameraForward;
-    const Vec3 rightAxis = RotateAroundAxis(-cameraRight, rollAxis, idleRoll);
-    const Vec3 upAxis = RotateAroundAxis(
-        RotateAroundAxis(cameraUp, rollAxis, idleRoll), rightAxis, idlePitch);
-    const Vec3 forwardAxis = RotateAroundAxis(cameraForward, rightAxis, idlePitch);
-
-    m_HandModel.transform = Matrix::identity();
-    m_HandModel.transform.m[0] = rightAxis.x * handScale;
-    m_HandModel.transform.m[1] = rightAxis.y * handScale;
-    m_HandModel.transform.m[2] = rightAxis.z * handScale;
-    m_HandModel.transform.m[4] = upAxis.x * handScale;
-    m_HandModel.transform.m[5] = upAxis.y * handScale;
-    m_HandModel.transform.m[6] = upAxis.z * handScale;
-    m_HandModel.transform.m[8] = forwardAxis.x * handScale;
-    m_HandModel.transform.m[9] = forwardAxis.y * handScale;
-    m_HandModel.transform.m[10] = forwardAxis.z * handScale;
-    m_HandModel.transform.m[12] = handPosition.x;
-    m_HandModel.transform.m[13] = handPosition.y;
-    m_HandModel.transform.m[14] = handPosition.z;
-    DrawModel(m_HandModel, Vec3{0, 0, 0}, 1.0f, WHITE);
-
     m_Lightning.DrawDebugLights(*m_pScene);
 
     m_Player.DrawDebugCollision(RED);
@@ -445,29 +258,17 @@ void GameScene::Draw() {
     DrawDebugText(TextFormat("Position: (%.2f, %.2f, %.2f)", m_Player.GetPosition().x,
         m_Player.GetPosition().y, m_Player.GetPosition().z), 0, 30, 24, Color{255, 255, 255, 255});
 
-    if (m_Inventory.IsVisible()) {
-        m_Inventory.Draw();
-    }
-
     EndDrawing();
 }
 
 void GameScene::Shutdown() {
-    m_Inventory.Shutdown();
     if (m_PrimitiveModel.meshCount != 0) UnloadModel(m_PrimitiveModel);
     for (auto& [entityIndex, model] : m_vEditablePrimitiveModels)
         if (model.meshCount != 0) UnloadModel(model);
     m_vEditablePrimitiveModels.clear();
-    if (m_HandModel.meshCount != 0) UnloadModel(m_HandModel);
-    if (m_ImpactModel.meshCount != 0) UnloadModel(m_ImpactModel);
     m_Lightning.Shutdown();
     if (IsShaderValid(m_LightingShader)) UnloadShader(m_LightingShader);
     if (IsShaderValid(m_ShadowShader)) UnloadShader(m_ShadowShader);
-    if (m_pWeapon) {
-        m_pWeapon->Shutdown();
-        delete m_pWeapon;
-        m_pWeapon = nullptr;
-    }
     gs_Resources.UnloadAll();
 }
 

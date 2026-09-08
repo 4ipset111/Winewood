@@ -23,9 +23,7 @@ set(SOURCE_FILES
 	src/lightning.cpp
 	src/scene_loader.cpp
 	src/player.cpp
-	src/weapon.cpp
 	src/resources.cpp
-	src/inventory.cpp
 )
 
 include_directories(include)

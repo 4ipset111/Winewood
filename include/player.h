@@ -24,7 +24,6 @@ public:
 
     void Update(bool inputEnabled = true);
     void ResetMouseDelta() { m_IgnoreNextMouseDelta = true; }
-    void ApplyRecoil(float pitch);
 
     const Camera3D& GetCamera() const { return m_Camera; }
     Vec3 GetPosition() const { return m_Position; }
@@ -58,7 +57,6 @@ private:
     float m_HeadTimer = 0.0f;
     float m_WalkLerp = 0.0f;
     float m_HeadLerp = 1.0f;
-    float m_RecoilPitch = 0.0f;
 };
 
 #endif // PLAYER_H

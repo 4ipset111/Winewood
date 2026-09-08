@@ -10,6 +10,7 @@ namespace {
     constexpr float JUMP_FORCE = 12.0f;
     constexpr float JUMP_BUFFER_TIME = 0.15f;
     constexpr float MAX_ACCEL = 150.0f;
+    constexpr float AIR_ACCEL_FACTOR = 0.15f;
     constexpr float FRICTION = 0.86f;
     constexpr float AIR_DRAG = 0.98f;
     constexpr float CONTROL = 15.0f;
@@ -18,6 +19,9 @@ namespace {
     constexpr float BOTTOM_HEIGHT = 0.5f;
     constexpr float PLAYER_RADIUS = 0.15f;
     constexpr float PLAYER_HEIGHT = 1.8f;
+    constexpr float MAX_STEP_HEIGHT = 1.0f;
+    constexpr float MAX_GROUND_DROP = 0.6f;
+    constexpr float GROUND_SAMPLE_RADIUS = 0.1f;
 
     Vec3 RotateAroundAxis(const Vec3& v, const Vec3& axis, float angle)
     {
@@ -58,7 +62,6 @@ void Player::Update(bool inputEnabled) {
     UpdateBody(m_LookRotation.x, sideway, forward, jumpPressed, crouching);
 
     float delta = GetFrameTime();
-    m_RecoilPitch = Lerp(m_RecoilPitch, 0.0f, 7.0f * delta);
     m_HeadLerp = Lerp(m_HeadLerp, crouching ? CROUCH_HEIGHT : STAND_HEIGHT, 20.0f * delta);
     m_Camera.position = Vec3{ m_Position.x, m_Position.y + (BOTTOM_HEIGHT + m_HeadLerp), m_Position.z };
 
@@ -77,11 +80,6 @@ void Player::Update(bool inputEnabled) {
     m_Lean.y = Lerp(m_Lean.y, forward * 0.015f, 10.0f * delta);
 
     UpdateCameraFPS();
-}
-
-void Player::ApplyRecoil(float pitch)
-{
-    m_RecoilPitch += pitch;
 }
 
 void Player::UpdateBody(float rot, float side, float forward, bool jumpPressed, bool crouchHold)
@@ -126,8 +124,9 @@ void Player::UpdateBody(float rot, float side, float forward, bool jumpPressed, 
 
     float speed = hvel.dot(m_Direction);
 
-    float maxSpeed = crouchHold ? CROUCH_SPEED : MAX_SPEED;
-    float accel = Clamp(maxSpeed - speed, 0.0f, MAX_ACCEL * delta);
+    const float accelScale = m_IsGrounded ? 1.0f : AIR_ACCEL_FACTOR;
+    const float maxSpeed = m_IsGrounded ? (crouchHold ? CROUCH_SPEED : MAX_SPEED) : MAX_SPEED;
+    float accel = Clamp(maxSpeed - speed, 0.0f, MAX_ACCEL * delta * accelScale);
 
     hvel.x += m_Direction.x * accel;
     hvel.z += m_Direction.z * accel;
@@ -149,7 +148,6 @@ void Player::ResolveCollisions(Vec3 previousPosition)
     m_IsGrounded = false;
 
     constexpr float COLLISION_EPSILON = 0.001f;
-    constexpr float MAX_STEP_HEIGHT = 1.0f;
     const auto castAxis = [&](float movement, const std::array<Vec3, 4>& origins, Vec3 direction,
                               float extent, bool isVertical, bool movingPositive) {
         const float rayLength = std::fabs(movement) + COLLISION_EPSILON;
@@ -227,21 +225,30 @@ void Player::ResolveCollisions(Vec3 previousPosition)
 
     bool snappedToGround = false;
     if ((wasGrounded || m_Velocity.y <= 0.0f) && m_Velocity.y <= 0.0f) {
-        const float groundRayLength = MAX_STEP_HEIGHT + COLLISION_EPSILON;
+        const float dropReach = wasGrounded ? MAX_GROUND_DROP : COLLISION_EPSILON;
+        const float groundRayLength = MAX_STEP_HEIGHT + dropReach + COLLISION_EPSILON;
+        const float sampleY = m_Position.y + MAX_STEP_HEIGHT;
+
+        const std::array<Vec3, 5> samples{
+            Vec3{ m_Position.x, sampleY, m_Position.z },
+            Vec3{ m_Position.x - GROUND_SAMPLE_RADIUS, sampleY, m_Position.z - GROUND_SAMPLE_RADIUS },
+            Vec3{ m_Position.x + GROUND_SAMPLE_RADIUS, sampleY, m_Position.z - GROUND_SAMPLE_RADIUS },
+            Vec3{ m_Position.x - GROUND_SAMPLE_RADIUS, sampleY, m_Position.z + GROUND_SAMPLE_RADIUS },
+            Vec3{ m_Position.x + GROUND_SAMPLE_RADIUS, sampleY, m_Position.z + GROUND_SAMPLE_RADIUS },
+        };
+        const int sampleCount = wasGrounded ? 5 : 1;
+
         const Collider* groundCollider = nullptr;
         RayCollision groundCollision{};
         float nearestGroundDistance = groundRayLength;
-        for (const Vec3& offset : std::array<Vec3, 1>{Vec3{0.0f, 0.0f, 0.0f}}) {
-            const Ray groundRay{
-                Vec3{m_Position.x + offset.x, m_Position.y + MAX_STEP_HEIGHT,
-                    m_Position.z + offset.z},
-                Vec3{0.0f, -1.0f, 0.0f}};
+        for (int i = 0; i < sampleCount; ++i) {
+            const Ray groundRay{ samples[i], Vec3{0.0f, -1.0f, 0.0f} };
             for (const Collider& collider : m_vColliders) {
                 if (!collider.isGround) continue;
                 for (const Collider::Triangle& triangle : collider.triangles) {
                     const RayCollision collision = GetRayCollisionTriangle(
                         groundRay, triangle.a, triangle.b, triangle.c);
-                    if (collision.hit && collision.distance <= nearestGroundDistance) {
+                    if (collision.hit && collision.distance < nearestGroundDistance) {
                         nearestGroundDistance = collision.distance;
                         groundCollision = collision;
                         groundCollider = &collider;
@@ -288,7 +295,7 @@ void Player::UpdateCameraFPS()
 
     Vec3 right = yaw.cross(up).normalized();
 
-    float pitchAngle = -m_LookRotation.y - m_Lean.y - m_RecoilPitch;
+    float pitchAngle = -m_LookRotation.y - m_Lean.y;
     pitchAngle = Clamp(pitchAngle, -PI / 2 + 0.0001f, PI / 2 - 0.0001f);
     Vec3 pitch = RotateAroundAxis(yaw, right, pitchAngle);
 

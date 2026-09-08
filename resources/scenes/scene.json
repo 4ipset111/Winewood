@@ -493,19 +493,19 @@
                 {
                     "data": {
                         "position": [
-                            2.091843366622925,
+                            2.733050584793091,
                             0.0,
-                            3.712562084197998
+                            3.2807655334472656
                         ],
                         "rotation": [
                             0.0,
-                            30.019670486450195,
+                            44.59859085083008,
                             0.0
                         ],
                         "scale": [
-                            1.3385844230651855,
+                            1.606301188468933,
                             1.0,
-                            0.9999998807907104
+                            0.9999999403953552
                         ]
                     },
                     "enabled": true,
@@ -576,11 +576,11 @@
                         ],
                         "rotation": [
                             0.0,
-                            -0.008218430913984776,
+                            -0.008218446746468544,
                             0.0
                         ],
                         "scale": [
-                            0.9999997019767761,
+                            1.3199996948242188,
                             1.0,
                             0.9999997019767761
                         ]
@@ -1084,9 +1084,9 @@
                 {
                     "data": {
                         "position": [
-                            -4.059531211853027,
+                            -4.191123008728027,
                             0.0,
-                            4.212562561035156
+                            4.1513776779174805
                         ],
                         "rotation": [
                             0.0,
@@ -1094,7 +1094,7 @@
                             0.0
                         ],
                         "scale": [
-                            0.9999954700469971,
+                            1.1999945640563965,
                             1.0,
                             0.9999954700469971
                         ]
@@ -1155,7 +1155,84 @@
             "name": "Cube",
             "parent_id": -1,
             "tags": []
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "position": [
+                            -2.6841983795166016,
+                            0.0,
+                            20.590181350708008
+                        ],
+                        "rotation": [
+                            0.0,
+                            -89.99994659423828,
+                            0.0
+                        ],
+                        "scale": [
+                            4.799997329711914,
+                            4.799999713897705,
+                            4.799997329711914
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Transform"
+                },
+                {
+                    "data": {
+                        "asset_name": "mountain/mount.blend1.obj",
+                        "editable_triangles": [],
+                        "editable_vertices": [],
+                        "is_editable_mesh": false,
+                        "segments": 16,
+                        "type": 0
+                    },
+                    "enabled": true,
+                    "type": "Mesh"
+                },
+                {
+                    "data": {
+                        "albedo_texture_name": "",
+                        "auto_uv": false,
+                        "color": [
+                            204,
+                            204,
+                            204,
+                            255
+                        ],
+                        "material_slot_sources": [
+                            "",
+                            ""
+                        ],
+                        "metallic_texture_name": "",
+                        "normal_texture_name": "",
+                        "outline_color": [
+                            200,
+                            200,
+                            200,
+                            255
+                        ],
+                        "repeat_u": 1.0,
+                        "repeat_v": 1.0,
+                        "roughness_texture_name": "",
+                        "texture_name": "C:\\Users\\chipset\\projectpp\\QuarkEngine\\projects\\Winewood\\resources\\mountain\\mount.blend1.mtl",
+                        "texture_source": 1,
+                        "texture_stretch": true,
+                        "uv_scale": [
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "enabled": true,
+                    "type": "Material"
+                }
+            ],
+            "is_group": false,
+            "name": "mount.blend1",
+            "parent_id": -1,
+            "tags": []
         }
     ],
-    "version": "v1.0.0"
+    "version": "v1.0.1"
 }
